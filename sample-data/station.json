@@ -1,0 +1,179 @@
+{
+  "station": {
+    "name": "Sample Radio Station",
+    "jingle": "jingles/on_air.mp3",
+    "filler": {
+      "excludeKeywords": ["christmas", "santa", "xmas", "holiday", "soundtrack"]
+    }
+  },
+  "downtime": {
+    "start": "00:00",
+    "end": "07:00"
+  },
+  "schedule": {
+    "monday,tuesday,wednesday,thursday,friday,saturday,sunday": [
+      {
+        "id": "proclaimers",
+        "startTime": "08:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/proclaimers.md"
+      },
+      {
+        "id": "runrig",
+        "startTime": "08:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/runrig.md"
+      },
+      {
+        "id": "60s-pop",
+        "startTime": "09:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/60s-pop.md"
+      },
+      {
+        "id": "70s-pop",
+        "startTime": "09:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/70s-pop.md"
+      },
+      {
+        "id": "leonard-cohen",
+        "startTime": "10:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/leonard-cohen.md"
+      },
+      {
+        "id": "80s-rock",
+        "startTime": "10:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/80s-rock.md"
+      },
+      {
+        "id": "elvis-lookback",
+        "startTime": "11:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/elvis-lookback.md"
+      },
+      {
+        "id": "90s-pop",
+        "startTime": "11:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/90s-pop.md"
+      },
+      {
+        "id": "classic-album",
+        "startTime": "12:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/classic-album.md"
+      },
+      {
+        "id": "robbie-williams",
+        "startTime": "12:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/robbie-williams.md"
+      },
+      {
+        "id": "ed-sheeran",
+        "startTime": "13:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/ed-sheeran.md"
+      },
+      {
+        "id": "elton-john",
+        "startTime": "13:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/elton-john.md"
+      },
+      {
+        "id": "disney",
+        "startTime": "14:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/disney.md"
+      },
+      {
+        "id": "soundtrack-album",
+        "startTime": "14:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/soundtrack-album.md"
+      },
+      {
+        "id": "soundtrack-shuffle",
+        "startTime": "15:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/soundtrack-shuffle.md"
+      },
+      {
+        "id": "female-vocals",
+        "startTime": "15:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/female-vocals.md"
+      },
+      {
+        "id": "british-artists",
+        "startTime": "16:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/british-artists.md"
+      },
+      {
+        "id": "male-artists",
+        "startTime": "16:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/male-artists.md"
+      },
+      {
+        "id": "irish-artists",
+        "startTime": "17:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/irish-artists.md"
+      },
+      {
+        "id": "american-artists",
+        "startTime": "17:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/american-artists.md"
+      },
+      {
+        "id": "country",
+        "startTime": "18:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/country.md"
+      },
+      {
+        "id": "scottish-artists",
+        "startTime": "18:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/scottish-artists.md"
+      },
+      {
+        "id": "european-artists",
+        "startTime": "19:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/european-artists.md"
+      },
+      {
+        "id": "classical",
+        "startTime": "19:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/classical.md"
+      },
+      {
+        "id": "instrumental",
+        "startTime": "20:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/instrumental.md"
+      },
+      {
+        "id": "natalie-merchant",
+        "startTime": "20:30",
+        "durationMinutes": 30,
+        "description": "show-descriptions/natalie-merchant.md"
+      },
+      {
+        "id": "abba",
+        "startTime": "21:00",
+        "durationMinutes": 30,
+        "description": "show-descriptions/abba.md"
+      }
+    ]
+  }
+}

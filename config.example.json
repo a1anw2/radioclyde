@@ -1,0 +1,94 @@
+{
+  "dataDir": "/radio",
+  "lmStudio": {
+    "url": "http://192.168.1.50:1234/v1/chat/completions",
+    "model": "qwen3.6-35b-a3b"
+  },
+  "chatterbox": {
+    "url": "http://yourserver.lan:8004/tts"
+  },
+  "icecast": {
+    "sourceHost": "localhost",
+    "publicHost": "yourserver.lan",
+    "port": 8001,
+    "mount": "/stream",
+    "sourcePassword": "CHANGE_ME",
+    "adminPassword": "CHANGE_ME",
+    "bitrate": 192
+  },
+  "web": {
+    "port": 8000,
+    "trustedNetworks": ["192.168.1.0/24"],
+    "listeners": [
+      { "username": "CHANGE_ME", "password": "CHANGE_ME" }
+    ]
+  },
+  "liquidsoap": {
+    "telnetHost": "127.0.0.1",
+    "telnetPort": 1234,
+    "queueId": "dj"
+  },
+  "plex": {
+    "baseUrl": "TBD - use the https://<ip-with-dashes>.<hash>.plex.direct:32400 hostname from Settings > Network, not the raw IP, or TLS cert validation will fail",
+    "token": "CHANGE_ME",
+    "librarySectionId": "TBD",
+    "scrobbleEnabled": true
+  },
+  "musicLibrary": {
+    "plexPathPrefix": "TBD",
+    "localMountPath": "/mnt/plex-music"
+  },
+  "djDrops": {
+    "gain": 2.0
+  },
+  "weather": {
+    "url": "https://api.open-meteo.com/v1/forecast",
+    "latitude": "TBD",
+    "longitude": "TBD",
+    "timezone": "TBD"
+  },
+  "schedule": {
+    "scriptLeadTimeMinutes": 120,
+    "scriptCheckIntervalMinutes": 15,
+    "directLeadTimeMinutes": 15,
+    "directCheckIntervalMinutes": 2,
+    "prewarmCheckIntervalMinutes": 15,
+    "nowPlayingCheckIntervalMinutes": 1,
+    "scheduleWatchIntervalMinutes": 1,
+    "maxCatchUpMinutes": 10
+  },
+  "filler": {
+    "poolSize": 200,
+    "regenerateIntervalMinutes": 360,
+    "maxTrackDurationSeconds": 600
+  },
+  "shows": {
+    "repeatWindowDays": 30
+  },
+  "cleanup": {
+    "retentionDays": 7,
+    "intervalMinutes": 360
+  },
+  "backup": {
+    "dir": "TBD - absolute path to a folder (ideally off-box or on separate storage) where daily backups of station.json and show-descriptions/ are written",
+    "intervalMinutes": 1440
+  },
+  "scripts": {
+    "maxToolIterations": 60,
+    "defaultRepeatWindowDays": 7
+  },
+  "scriptReview": {
+    "enabled": true,
+    "systemPrompt": "You are the final script editor for a radio show, reviewing the complete assembled script in one pass. Each line was originally written separately by a writer who could only see one line at a time, so the same phrase, simile, or metaphor sometimes gets reused across the show without anyone noticing (e.g. three different segments all reaching for the same turn of phrase). Your only job is to fix that kind of repetition and smooth over any line that doesn't flow naturally into what comes right before or after it. Rewrite only what genuinely needs it -- most lines should come back completely unchanged. Preserve every fact, name, date, and number exactly as given. Preserve each persona's voice and each line's approximate length and role. Do not merge, drop, add, or reorder lines, and do not add stage directions or meta-commentary."
+  },
+  "personas": {
+    "late_night": {
+      "voiceFile": "PREDEFINED_VOICE_1.wav",
+      "systemPrompt": "You are a laid-back late-night radio DJ. Calm, warm, minimal words."
+    },
+    "morning_show": {
+      "voiceFile": "PREDEFINED_VOICE_2.wav",
+      "systemPrompt": "You are an upbeat morning show DJ. High energy, quick, a little cheesy."
+    }
+  }
+}

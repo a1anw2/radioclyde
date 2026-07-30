@@ -1,0 +1,274 @@
+:root {
+  color-scheme: dark;
+  --bg: #14161a;
+  --surface: #1e2126;
+  --text: #e8e9ec;
+  --muted: #9aa0aa;
+  --accent: #4fd1c5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.sidebar {
+  flex: 0 0 400px;
+  width: 400px;
+}
+
+.logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.stream-url {
+  margin: 0.75rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+  word-break: break-all;
+  text-align: center;
+}
+
+main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .page {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+.now-playing {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 1.25rem;
+  /* room for #play-button, pinned top-right opposite .show-name */
+  padding-right: 8rem;
+}
+
+.art {
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #000;
+}
+
+.now-playing-info p {
+  margin: 0.3rem 0;
+}
+
+.on-air-label {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.show-name {
+  color: var(--accent);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.show-host {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+.dj-talking {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.track-title {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.track-artist {
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+
+.track-progress {
+  margin-top: 0.6rem;
+}
+
+.track-progress-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.track-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.track-progress-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.player {
+  margin: 1.5rem 0 2rem;
+}
+
+#play-button {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: var(--accent);
+  color: #0a0c0e;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#play-button:hover {
+  filter: brightness(1.1);
+}
+
+.history h2,
+.upcoming h2 {
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.upcoming {
+  margin-top: 1.5rem;
+}
+
+#upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#upcoming-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.upcoming-time {
+  color: var(--accent);
+  flex-shrink: 0;
+  padding-top: 0.1rem;
+}
+
+.upcoming-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+  text-align: right;
+}
+
+.upcoming-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.upcoming-host {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+#history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#history-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+#history-list img {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+#history-list span {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

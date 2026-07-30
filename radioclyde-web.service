@@ -1,0 +1,16 @@
+[Unit]
+Description=Radioclyde web server (now-playing page, stream proxy, API)
+After=network.target icecast2.service liquidsoap.service
+Wants=icecast2.service liquidsoap.service
+
+[Service]
+Type=simple
+User=ai
+Group=ai
+WorkingDirectory=/home/ai/radioclyde
+ExecStart=/home/ai/.nvm/versions/node/v24.18.0/bin/node /home/ai/radioclyde/src/server/index.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

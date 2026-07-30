@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RadioClyde" parent="Theme.Leanback">
+        <item name="android:windowBackground">@color/brand_background</item>
+        <item name="defaultBrandColor">@color/brand_background</item>
+        <item name="defaultSearchColor">@color/brand_accent</item>
+    </style>
+
+    <style name="Theme.RadioClyde.GuidedStep" parent="Theme.Leanback.GuidedStep"/>
+</resources>

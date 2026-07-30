@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radio</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <img id="logo" class="logo" src="/logo.png" alt="">
+      <p class="stream-url" id="stream-url">&nbsp;</p>
+
+      <section class="upcoming">
+        <h2>Radio Shows Coming up</h2>
+        <ul id="upcoming-list"></ul>
+      </section>
+    </aside>
+
+    <main>
+      <section id="now-playing" class="now-playing">
+        <img id="art" class="art" alt="" hidden>
+        <div class="now-playing-info">
+          <p class="on-air-label" id="on-air-label" hidden>&nbsp;</p>
+          <p class="show-name" id="show-name">&nbsp;</p>
+          <p class="show-host" id="show-host" hidden>&nbsp;</p>
+          <p class="dj-talking" id="dj-talking" hidden>&nbsp;</p>
+          <p class="track-title" id="track-title">&nbsp;</p>
+          <p class="track-artist" id="track-artist">&nbsp;</p>
+          <div class="track-progress" id="track-progress" hidden>
+            <div class="track-progress-bar"><div class="track-progress-fill" id="track-progress-fill"></div></div>
+            <div class="track-progress-times">
+              <span id="track-elapsed">0:00</span>
+              <span id="track-duration">0:00</span>
+            </div>
+          </div>
+        </div>
+        <button id="play-button" type="button">Tune In</button>
+      </section>
+
+      <div class="player">
+        <audio id="player" preload="none"></audio>
+      </div>
+
+      <section class="history">
+        <h2>Recently played</h2>
+        <ul id="history-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

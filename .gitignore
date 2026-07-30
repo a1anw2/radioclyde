@@ -1,0 +1,24 @@
+node_modules/
+
+# Real config holds secrets (icecast source password, Plex token, Exa key) —
+# copy config.example.json to config.json and fill in real values locally.
+config.json
+
+# All radio data (schedule.json, show-descriptions/*.md, generated output
+# trees, history, logs, playlists, cache) lives outside the repo under
+# dataDir (see config.json), not here -- nothing left in-repo to ignore.
+
+# Generated at runtime, not source
+.env
+
+# Android TV app (android-tv/) — standard Android Gradle project ignores
+android-tv/local.properties
+android-tv/.gradle/
+android-tv/.idea/
+android-tv/*.iml
+android-tv/app/*.iml
+android-tv/app/build/
+android-tv/build/
+android-tv/captures/
+android-tv/.cxx/
+android-tv/local.settings.json

@@ -1,0 +1,35 @@
+{
+  "name": "radiocylde",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Orchestration scripts for a self-hosted AI DJ internet radio station (Liquidsoap + Icecast + LM Studio + Chatterbox).",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "generate-script": "node src/producer/generateScript.js",
+    "direct-show": "node src/cli/directShow.js",
+    "prewarm-show-audio": "node src/cli/prewarmShowAudio.js",
+    "preview-track-queue": "node src/cli/previewTrackQueue.js",
+    "preview-track-query-ai": "node src/cli/previewTrackQueryAi.js",
+    "preview-tracks": "node src/cli/previewTrackQueryAi.js",
+    "preview-show-prep": "node src/cli/previewShowPrep.js",
+    "update-now-playing": "node src/scheduler/updateNowPlaying.js",
+    "generate-filler-playlist": "node src/scheduler/generateFillerPlaylist.js",
+    "cleanup-shows": "node src/scheduler/cleanupOldShows.js",
+    "runstation": "node src/scheduler/scheduler.js",
+    "runweb": "node src/server/index.js",
+    "start-station": "sudo systemctl start radiocylde-scheduler",
+    "stop-station": "sudo systemctl stop radiocylde-scheduler",
+    "restart-station": "sudo systemctl restart radiocylde-scheduler",
+    "status-station": "systemctl status radiocylde-scheduler",
+    "start-web": "sudo systemctl start radioclyde-web",
+    "stop-web": "sudo systemctl stop radioclyde-web",
+    "restart-web": "sudo systemctl restart radioclyde-web",
+    "status-web": "systemctl status radioclyde-web"
+  },
+  "dependencies": {
+    "fastify": "^5.10.0"
+  }
+}
