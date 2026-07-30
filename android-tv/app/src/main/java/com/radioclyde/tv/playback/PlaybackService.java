@@ -20,6 +20,8 @@ import com.radioclyde.tv.model.Track;
 import com.radioclyde.tv.net.ApiClient;
 import com.radioclyde.tv.settings.SettingsRepository;
 
+import java.util.Locale;
+
 /**
  * Foreground MediaSessionService hosting the single live ExoPlayer stream.
  * Keeps audio playing in the background and wires the TV remote's
@@ -104,6 +106,13 @@ public class PlaybackService extends MediaSessionService {
             if (nowPlaying.show != null && nowPlaying.show.name != null) {
                 metadata.setArtist(nowPlaying.show.name);
             }
+            // A handoff joins names with " & " (see server/showName.js);
+            // only the first persona's photo is shown for that rare case.
+            // Not every persona has a photo yet -- a missing one 404s and
+            // both AuthArtBitmapLoader and PlaybackActivity's Glide.error()
+            // already treat that as "nothing to show", no extra handling.
+            String persona = nowPlaying.dj.split(" & ")[0].toLowerCase(Locale.US);
+            metadata.setArtworkUri(Uri.parse(settings.getBaseUrl() + "/dj-photos/" + persona));
         } else if (nowPlaying.track != null) {
             Track track = nowPlaying.track;
             metadata.setTitle(track.title);

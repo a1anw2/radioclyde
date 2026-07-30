@@ -55,6 +55,10 @@ function tickTrackProgress() {
 // image rather than show it.
 logoEl.addEventListener('error', () => (logoEl.hidden = true));
 
+// Covers both a missing track art URL and a persona with no photo yet at
+// public/dj-photos/<persona>.jpg (#art doubles as the DJ photo slot below).
+artEl.addEventListener('error', () => (artEl.hidden = true));
+
 playButton.addEventListener('click', () => {
   if (!streamStarted) {
     player.src = '/stream';
@@ -93,7 +97,11 @@ async function fetchNowPlaying() {
       djTalkingEl.hidden = false;
       trackTitleEl.hidden = true;
       trackArtistEl.hidden = true;
-      artEl.hidden = true;
+      // A handoff joins names with " & " (see server/showName.js); only the
+      // first persona's photo is shown for that rare case.
+      const persona = data.dj.split(' & ')[0].toLowerCase();
+      artEl.src = `/dj-photos/${persona}`;
+      artEl.hidden = false;
       currentTrackTiming = null;
       trackIsPlaying = false;
     } else {
@@ -158,9 +166,24 @@ async function fetchUpcoming() {
     for (const show of shows) {
       const li = document.createElement('li');
 
+      const left = document.createElement('div');
+      left.className = 'upcoming-left';
+
+      // Same /dj-photos/<persona> lookup as the now-playing DJ photo;
+      // 404s (a host with no photo yet) just hide the thumb via onerror.
+      if (show.host) {
+        const avatar = document.createElement('img');
+        avatar.className = 'upcoming-avatar';
+        avatar.alt = '';
+        avatar.src = `/dj-photos/${show.host.toLowerCase()}`;
+        avatar.addEventListener('error', () => (avatar.hidden = true));
+        left.appendChild(avatar);
+      }
+
       const time = document.createElement('span');
       time.className = 'upcoming-time';
       time.textContent = `${WEEKDAY_ABBR[show.weekday] ?? show.weekday} ${show.startTime}`;
+      left.appendChild(time);
 
       const info = document.createElement('span');
       info.className = 'upcoming-info';
@@ -175,7 +198,7 @@ async function fetchUpcoming() {
         info.appendChild(host);
       }
 
-      li.appendChild(time);
+      li.appendChild(left);
       li.appendChild(info);
       upcomingListEl.appendChild(li);
     }

@@ -30,6 +30,14 @@ export function registerStaticRoutes(fastify) {
         return reply.code(404).send();
       }
       reply.header('content-type', contentType);
+      // No cache-control/etag/last-modified are sent otherwise, which
+      // leaves browsers free to cache these heuristically -- app.js in
+      // particular is a live <script>, and a cached stale copy silently
+      // keeps running old logic against the current server/API forever
+      // (only a hard-refresh would ever notice). These assets are tiny and
+      // served to a handful of personal devices, so there's no real cost
+      // to always fetching fresh.
+      reply.header('cache-control', 'no-store');
       return body;
     });
   }

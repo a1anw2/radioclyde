@@ -21,8 +21,8 @@ android {
         applicationId "com.radioclyde.tv"
         minSdk 23
         targetSdk 34
-        versionCode 3
-        versionName "1.2"
+        versionCode 5
+        versionName "1.4"
         resValue "string", "app_name", (localProperties.getProperty("stationAppName") ?: "Radio Clyde")
     }
 

@@ -205,7 +205,7 @@ main {
 #upcoming-list li {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   background: var(--surface);
   border-radius: 8px;
@@ -213,10 +213,26 @@ main {
   font-size: 0.85rem;
 }
 
+.upcoming-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.upcoming-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #000;
+}
+
 .upcoming-time {
   color: var(--accent);
   flex-shrink: 0;
-  padding-top: 0.1rem;
 }
 
 .upcoming-info {
