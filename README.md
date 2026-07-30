@@ -75,6 +75,50 @@ phases hand off through.
 - **Production-ready as a systemd service**: unit files for the scheduler
   daemon and the web server.
 
+## Meet the DJs
+
+Each persona has its own photo, shown alongside its voice in the web
+now-playing page and the Google TV app.
+
+<table>
+<tr>
+<td align="center"><img src="public/dj-photos/abigail.jpg" width="100"><br>Abigail</td>
+<td align="center"><img src="public/dj-photos/adrian.jpg" width="100"><br>Adrian</td>
+<td align="center"><img src="public/dj-photos/alexander.jpg" width="100"><br>Alexander</td>
+<td align="center"><img src="public/dj-photos/alice.jpg" width="100"><br>Alice</td>
+<td align="center"><img src="public/dj-photos/austin.jpg" width="100"><br>Austin</td>
+<td align="center"><img src="public/dj-photos/axel.jpg" width="100"><br>Axel</td>
+<td align="center"><img src="public/dj-photos/connor.jpg" width="100"><br>Connor</td>
+</tr>
+<tr>
+<td align="center"><img src="public/dj-photos/cora.jpg" width="100"><br>Cora</td>
+<td align="center"><img src="public/dj-photos/elena.jpg" width="100"><br>Elena</td>
+<td align="center"><img src="public/dj-photos/eli.jpg" width="100"><br>Eli</td>
+<td align="center"><img src="public/dj-photos/emily.jpg" width="100"><br>Emily</td>
+<td align="center"><img src="public/dj-photos/everett.jpg" width="100"><br>Everett</td>
+<td align="center"><img src="public/dj-photos/gabriel.jpg" width="100"><br>Gabriel</td>
+<td align="center"><img src="public/dj-photos/gianna.jpg" width="100"><br>Gianna</td>
+</tr>
+<tr>
+<td align="center"><img src="public/dj-photos/henry.jpg" width="100"><br>Henry</td>
+<td align="center"><img src="public/dj-photos/ian.jpg" width="100"><br>Ian</td>
+<td align="center"><img src="public/dj-photos/jade.jpg" width="100"><br>Jade</td>
+<td align="center"><img src="public/dj-photos/jeremiah.jpg" width="100"><br>Jeremiah</td>
+<td align="center"><img src="public/dj-photos/jordan.jpg" width="100"><br>Jordan</td>
+<td align="center"><img src="public/dj-photos/julian.jpg" width="100"><br>Julian</td>
+<td align="center"><img src="public/dj-photos/layla.jpg" width="100"><br>Layla</td>
+</tr>
+<tr>
+<td align="center"><img src="public/dj-photos/leonardo.jpg" width="100"><br>Leonardo</td>
+<td align="center"><img src="public/dj-photos/michael.jpg" width="100"><br>Michael</td>
+<td align="center"><img src="public/dj-photos/miles.jpg" width="100"><br>Miles</td>
+<td align="center"><img src="public/dj-photos/olivia.jpg" width="100"><br>Olivia</td>
+<td align="center"><img src="public/dj-photos/ryan.jpg" width="100"><br>Ryan</td>
+<td align="center"><img src="public/dj-photos/taylor.jpg" width="100"><br>Taylor</td>
+<td align="center"><img src="public/dj-photos/thomas.jpg" width="100"><br>Thomas</td>
+</tr>
+</table>
+
 ## Components
 
 | Component | Role |
