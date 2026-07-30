@@ -14,6 +14,11 @@ Nothing here is a hosted service or SaaS: it's orchestration code you run
 against your own Plex server, your own local LLM, and your own TTS engine,
 described in more depth below.
 
+<p align="center">
+  <img src="docs/web.png" alt="Web now-playing page" width="49%">
+  <img src="docs/GoogleTV.jpg" alt="Google TV app" width="49%">
+</p>
+
 ## What it does
 
 A single long-running scheduler daemon watches the clock and, for every
