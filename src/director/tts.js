@@ -1,10 +1,24 @@
 import { config } from '../config/index.js';
 
+// exaggeration/cfgWeight/temperature are Chatterbox's own generation knobs,
+// left out of the request (falling back to its server-side defaults) unless
+// set in config.chatterbox -- a low cfg_weight is what produces the muffled,
+// "hand over mouth" quality; a high exaggeration is what produces distortion
+// that reads as bassy/boomy rather than expressive.
 async function requestSynthesis(text, voiceFile) {
+  const { exaggeration, cfgWeight, temperature } = config.chatterbox;
   const res = await fetch(config.chatterbox.url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voice_mode: 'predefined', predefined_voice_id: voiceFile, output_format: 'wav' }),
+    body: JSON.stringify({
+      text,
+      voice_mode: 'predefined',
+      predefined_voice_id: voiceFile,
+      output_format: 'wav',
+      ...(exaggeration != null && { exaggeration }),
+      ...(cfgWeight != null && { cfg_weight: cfgWeight }),
+      ...(temperature != null && { temperature }),
+    }),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
@@ -31,7 +45,10 @@ export async function synthesizeVoice(text, voiceFile) {
   }
 }
 
-async function reloadModel() {
+// Also used directly by scheduler/restartChatterbox.js for the daily
+// maintenance restart -- despite the endpoint's name this reloads the model
+// in-process rather than restarting the server (see the comment above).
+export async function reloadModel() {
   const reloadUrl = new URL('/restart_server', config.chatterbox.url).toString();
   const res = await fetch(reloadUrl, { method: 'POST' });
   if (!res.ok) {

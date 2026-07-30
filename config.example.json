@@ -5,7 +5,11 @@
     "model": "qwen3.6-35b-a3b"
   },
   "chatterbox": {
-    "url": "http://yourserver.lan:8004/tts"
+    "url": "http://yourserver.lan:8004/tts",
+    "exaggeration": 0.4,
+    "cfgWeight": 0.65,
+    "temperature": 0.8,
+    "restartIntervalMinutes": 1440
   },
   "icecast": {
     "sourceHost": "localhost",

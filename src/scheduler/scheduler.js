@@ -19,6 +19,7 @@ import { updateNowPlaying } from './updateNowPlaying.js';
 import { generateFillerPlaylist } from './generateFillerPlaylist.js';
 import { cleanupOldShows } from './cleanupOldShows.js';
 import { backupStation } from './backupStation.js';
+import { restartChatterbox } from './restartChatterbox.js';
 
 const log = createLogger('station');
 
@@ -93,5 +94,6 @@ every(config.schedule.nowPlayingCheckIntervalMinutes, 'now_playing', updateNowPl
 every(config.filler.regenerateIntervalMinutes, 'filler', generateFillerPlaylist);
 every(config.cleanup.intervalMinutes, 'cleanup', cleanupOldShows);
 every(config.backup.intervalMinutes, 'backup', backupStation);
+every(config.chatterbox.restartIntervalMinutes ?? 1440, 'chatterbox_restart', restartChatterbox);
 
 log('Scheduler started.');
