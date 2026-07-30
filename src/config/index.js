@@ -21,6 +21,9 @@ config.paths = {
   stationFile: path.join(config.dataDir, 'station.json'),
   stationHashPath: path.join(config.dataDir, '.station_hash'),
   showDescriptionsDir: path.join(config.dataDir, 'show-descriptions'),
+  // Optional per-show logo at <id>.png; falls back to public/logo.png when
+  // a show doesn't have one yet (see server/showLogoProxy.js).
+  showLogosDir: path.join(config.dataDir, 'show-logos'),
   // Every produced/directed show occurrence (weekday/showId/date/...) lives
   // under this one namespace, so config.dataDir's top level stays limited to
   // the small set of station-wide files instead of one directory per weekday.

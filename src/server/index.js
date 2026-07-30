@@ -13,6 +13,7 @@ import { registerStaticRoutes } from './staticFiles.js';
 import { registerStreamRoute } from './streamProxy.js';
 import { registerApiRoutes } from './api.js';
 import { registerArtRoute } from './artProxy.js';
+import { registerShowLogoRoute } from './showLogoProxy.js';
 import { registerWeatherRoute } from './weatherApi.js';
 
 const log = createLogger('web');
@@ -30,6 +31,7 @@ async function main() {
   registerStreamRoute(fastify);
   registerApiRoutes(fastify);
   registerArtRoute(fastify);
+  registerShowLogoRoute(fastify);
   registerWeatherRoute(fastify);
 
   await fastify.listen({ port: config.web.port, host: '0.0.0.0' });

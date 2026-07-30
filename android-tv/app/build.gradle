@@ -2,6 +2,17 @@ plugins {
     id "com.android.application"
 }
 
+// Local, gitignored override for this station's actual on-screen name (the
+// launcher label can't be fetched at runtime like the logo -- it's baked
+// into the APK, so it has to come from somewhere that isn't the tracked,
+// generic default). Set stationAppName in local.properties; falls back to
+// the public project's own name if unset.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
 android {
     namespace "com.radioclyde.tv"
     compileSdk 35
@@ -10,8 +21,9 @@ android {
         applicationId "com.radioclyde.tv"
         minSdk 23
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.2"
+        resValue "string", "app_name", (localProperties.getProperty("stationAppName") ?: "Radio Clyde")
     }
 
     buildTypes {

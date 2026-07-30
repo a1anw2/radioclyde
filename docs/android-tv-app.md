@@ -41,6 +41,7 @@ Basic-auth gate as everything else on that server — see `src/server/auth.js`):
 | `GET /api/now-playing` | show/track/dj state, polled every 12s |
 | `GET /api/history?limit=N` | "Recently Played" list |
 | `GET /api/art/:ratingKey` | album art (needs the same auth header) |
+| `GET /api/show-logo/:showId` | station/show logo, see below |
 | `GET /api/weather` | added *for this app* — `src/server/weatherApi.js`, wraps `src/director/weather.js`'s `fetchCurrentWeather()`, server-side cached 10 minutes since it's a decorative, slow-changing value and Open-Meteo is a free/unauthenticated API |
 
 The client always sends the `Authorization: Basic` header on every request
@@ -106,6 +107,14 @@ default screen meant to display "what's on air" *before* the user presses
 Play, that gating was removed — `PlaybackService.onCreate()` starts the
 poller unconditionally and it runs for the service's whole lifetime,
 independent of playback state.
+
+**Station/show logo.** `station_logo` always loads from the server (never
+a bundled asset) so the app reflects whatever's actually configured. Each
+`/api/now-playing` poll drives it: with a show airing, it loads
+`/api/show-logo/<showId>` (falls back server-side to the station logo when
+that show has no logo of its own yet); with nothing airing (e.g. downtime),
+it loads `/logo.png` directly. `card_placeholder` is only ever Glide's
+placeholder/error drawable, not a real fallback image.
 
 **Metadata carried via `MediaMetadata.extras`.** `title`/`artist`/`artworkUri`
 map naturally to track fields, but "show name" and the track-progress

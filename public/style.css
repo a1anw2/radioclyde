@@ -75,8 +75,6 @@ main {
   background: var(--surface);
   border-radius: 12px;
   padding: 1.25rem;
-  /* room for #play-button, pinned top-right opposite .show-name */
-  padding-right: 8rem;
 }
 
 .art {
@@ -98,12 +96,16 @@ main {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  /* room for #play-button, pinned top-right on the same row */
+  padding-right: 8rem;
 }
 
 .show-name {
   color: var(--accent);
   font-size: 1.5rem;
   font-weight: 600;
+  /* same clearance as .on-air-label, in case the label's hidden */
+  padding-right: 8rem;
 }
 
 .show-host {

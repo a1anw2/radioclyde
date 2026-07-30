@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.radioclyde.tv.R;
 import com.radioclyde.tv.model.HistoryEntry;
 import com.radioclyde.tv.model.NowPlaying;
+import com.radioclyde.tv.model.Show;
 import com.radioclyde.tv.model.Weather;
 import com.radioclyde.tv.net.ApiClient;
 import com.radioclyde.tv.net.GlideAuthHeaderFactory;
@@ -59,6 +60,7 @@ public class PlaybackActivity extends FragmentActivity {
 
     private TextView showNameView;
     private TextView weatherTempView;
+    private ImageView stationLogoView;
     private ImageView trackArtView;
     private TextView trackTitleView;
     private TextView trackArtistView;
@@ -108,6 +110,7 @@ public class PlaybackActivity extends FragmentActivity {
 
         showNameView = findViewById(R.id.show_name);
         weatherTempView = findViewById(R.id.weather_temp);
+        stationLogoView = findViewById(R.id.station_logo);
         trackArtView = findViewById(R.id.track_art);
         trackTitleView = findViewById(R.id.track_title);
         trackArtistView = findViewById(R.id.track_artist);
@@ -219,6 +222,25 @@ public class PlaybackActivity extends FragmentActivity {
         }
     }
 
+    /**
+     * /api/show-logo/:showId falls back to the station logo server-side
+     * when a show doesn't have its own yet, so the only client-side
+     * fallback needed is for when no show is airing at all (e.g. downtime).
+     */
+    private void applyStationLogo(Show show) {
+        String path = show != null && show.id != null ? "/api/show-logo/" + show.id : "/logo.png";
+        String url = settings.getBaseUrl() + path;
+        try {
+            Glide.with(this)
+                    .load(GlideAuthHeaderFactory.buildGlideUrl(url, settings))
+                    .placeholder(R.drawable.card_placeholder)
+                    .error(R.drawable.card_placeholder)
+                    .into(stationLogoView);
+        } catch (IllegalArgumentException e) {
+            // Activity already destroyed -- nothing to bind.
+        }
+    }
+
     private void updatePlayPauseIcon(boolean isPlaying) {
         playPauseButton.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
     }
@@ -240,6 +262,7 @@ public class PlaybackActivity extends FragmentActivity {
                 AppExecutors.runOnMain(() -> {
                     if (!isFinishing() && !isDestroyed()) {
                         historyAdapter.submit(displayEntries);
+                        applyStationLogo(nowPlaying.show);
                     }
                 });
             } catch (IOException e) {
