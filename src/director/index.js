@@ -13,7 +13,7 @@ import { getDurationSeconds, concatWavFiles, applyFadeOut } from '../lib/audio.j
 import * as scheduleUtil from '../scheduler/scheduleUtil.js';
 import { toLocalPath } from '../plex/musicLibrary.js';
 import { mergeTrackRatingKeys } from '../plex/ratingKeyIndex.js';
-import { unloadVoice } from './tts.js';
+import { restartChatterbox } from '../scheduler/restartChatterbox.js';
 import { resolveLiveLine } from './liveSegments.js';
 import { loadValidatedScript } from './scriptLoader.js';
 import { synthesizeSpeechToPath, getCachedDjAudio } from './djAudio.js';
@@ -176,16 +176,18 @@ export async function directShow({ id, weekday, date, timeKey }) {
   }
   await flushPendingSpeech();
 
-  // All of this show's TTS is done -- release Chatterbox's loaded voice
-  // model rather than leaving it resident until the next show needs one
-  // (see tts.js's unloadVoice). Best-effort: a failure here shouldn't block
-  // this show from finishing production, and it doesn't need scrobbleEnabled
-  // -style config gating -- clearing GPU memory has no meaningful "disabled"
-  // state a user would want.
+  // All of this show's TTS is done -- restart Chatterbox's OS process now
+  // rather than leaving it resident until the next show needs one (see
+  // scheduler/restartChatterbox.js: unloading the model alone doesn't
+  // reclaim everything that accumulates in the process's memory/swap over
+  // many shows). Best-effort: a failure here shouldn't block this show from
+  // finishing production, and it doesn't need scrobbleEnabled-style config
+  // gating -- reclaiming memory has no meaningful "disabled" state a user
+  // would want.
   try {
-    await unloadVoice();
+    await restartChatterbox();
   } catch (err) {
-    log(`[${id}] NOTE: Chatterbox unload failed: ${err.message}`);
+    log(`[${id}] NOTE: Chatterbox restart failed: ${err.message}`);
   }
 
   // Real per-file durations, not the scheduled durationMinutes -- DJ speech

@@ -11,7 +11,7 @@ import path from 'node:path';
 import { createLogger } from '../lib/logger.js';
 import { loadValidatedScript } from './scriptLoader.js';
 import { getCachedDjAudio } from './djAudio.js';
-import { unloadVoice } from './tts.js';
+import { restartChatterbox } from '../scheduler/restartChatterbox.js';
 
 const log = createLogger('station');
 
@@ -28,14 +28,15 @@ export async function prewarmShowAudio({ id, weekday, date }) {
     if (!cached) warmed++;
   }
 
-  // Same reasoning as directShow()'s own unloadVoice call: don't leave
-  // Chatterbox's voice model resident in GPU memory once this show's TTS is
-  // done. Best-effort -- a failure here shouldn't block the prewarm pass
-  // from moving on to the next show.
+  // Same reasoning as directShow()'s own restartChatterbox call: reclaim
+  // whatever accumulated in the process's memory/swap during this show's TTS
+  // rather than leaving it resident until the next one. Best-effort -- a
+  // failure here shouldn't block the prewarm pass from moving on to the next
+  // show.
   try {
-    await unloadVoice();
+    await restartChatterbox();
   } catch (err) {
-    log(`[${id}] NOTE: Chatterbox unload failed after prewarm: ${err.message}`);
+    log(`[${id}] NOTE: Chatterbox restart failed after prewarm: ${err.message}`);
   }
 
   log(`[${id}] Prewarmed dj audio for ${weekday} ${date}: ${warmed}/${djSegments.length} segment(s) synthesized (rest already cached).`);
