@@ -1,0 +1,61 @@
+plugins {
+    id "com.android.application"
+}
+
+// Local, gitignored override for this station's actual on-screen name (the
+// launcher label can't be fetched at runtime like the logo -- it's baked
+// into the APK, so it has to come from somewhere that isn't the tracked,
+// generic default). Set stationAppName in local.properties; falls back to
+// the public project's own name if unset. Mirrors android-tv/app/build.gradle.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
+android {
+    namespace "com.radioclyde.mobile"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.radioclyde.mobile"
+        minSdk 23
+        targetSdk 34
+        versionCode 2
+        versionName "0.1"
+        resValue "string", "app_name", (localProperties.getProperty("stationAppName") ?: "Radio Clyde")
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled true
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "com.google.android.material:material:1.12.0"
+    implementation "androidx.fragment:fragment:1.8.2"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+
+    implementation "androidx.media3:media3-exoplayer:1.4.1"
+    implementation "androidx.media3:media3-session:1.4.1"
+    implementation "androidx.media3:media3-datasource:1.4.1"
+
+    implementation "androidx.recyclerview:recyclerview:1.3.2"
+    implementation "com.github.bumptech.glide:glide:4.16.0"
+
+    // Explicit (rather than relying on Media3's transitive version) since
+    // AuthArtBitmapLoader implements Media3's BitmapLoader contract, which
+    // returns Guava ListenableFuture/SettableFuture directly.
+    implementation "com.google.guava:guava:33.2.1-android"
+
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"
+}

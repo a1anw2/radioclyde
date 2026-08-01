@@ -14,7 +14,7 @@ import { toLocalISOString } from '../lib/time.js';
 import { scrobbleTrack } from './scrobble.js';
 import { lookupRatingKey } from './ratingKeyIndex.js';
 import { getTrackByRatingKey } from './tracks.js';
-import { readNowPlayingState, confirmOccurrenceStart } from '../scheduler/updateNowPlaying.js';
+import { readNowPlayingState, confirmOccurrenceStart, updateNowPlaying } from '../scheduler/updateNowPlaying.js';
 import { getListenerCount } from '../icecast/listeners.js';
 
 const log = createLogger('station');
@@ -62,6 +62,28 @@ async function main() {
   // currently-loaded occurrence's own first segment, see its comment in
   // scheduler/updateNowPlaying.js for why this needs to run here at all.
   confirmOccurrenceStart(filePath);
+
+  // Reactive nudge, not a replacement for scheduler.js's own fixed-interval
+  // call -- show_source (radio.liq) is loop=false, so the instant a show's
+  // real audio runs out, Liquidsoap falls back to filler on its own, in real
+  // time. If nothing swaps the next occurrence's playlist into
+  // now_playing.m3u until scheduler.js's next nowPlayingCheckIntervalMinutes
+  // tick (currently 1min), a clean back-to-back handoff (no gap in
+  // station.json) still audibly plays filler-then-jingle-then-show instead
+  // of cutting straight over. Calling this here means the very next segment
+  // to start airing -- typically the first filler track, since fallback()
+  // picks one up within a second or two of show_source emptying -- catches
+  // the transition almost immediately instead of waiting out the poll. Cheap
+  // and safe to call on every single segment: for any segment well before
+  // the current occurrence's estimatedEndAt (the overwhelming majority),
+  // updateNowPlaying() reads two small files and returns immediately.
+  // Runs in its own detached process per segment (see this file's header),
+  // separate from scheduler.js's daemon process -- both racing to write the
+  // same state file/now_playing.m3u is safe here because the function is
+  // idempotent (sameOccurrence() early-returns once either has applied the
+  // switch) and a redundant duplicate write is harmless, so no cross-process
+  // lock is needed for this.
+  await updateNowPlaying();
 
   const ratingKey = lookupRatingKey(filePath);
   if (!ratingKey) {

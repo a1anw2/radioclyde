@@ -26,3 +26,14 @@ android-tv/local.settings.json
 # Local dev device inventory (LAN IP:port for adb network debugging) --
 # machine-specific, not shared/checked in.
 android-tv/devices.json
+
+# Android mobile app (android-mobile/) — standard Android Gradle project ignores
+android-mobile/local.properties
+android-mobile/.gradle/
+android-mobile/.idea/
+android-mobile/*.iml
+android-mobile/app/*.iml
+android-mobile/app/build/
+android-mobile/build/
+android-mobile/captures/
+android-mobile/.cxx/

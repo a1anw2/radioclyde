@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fixed dark brand theme (not day/night), matching android-tv's always-dark dashboard. -->
+    <style name="Theme.RadioClyde" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/brand_background</item>
+        <item name="colorPrimary">@color/brand_accent</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">@color/brand_surface</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+    </style>
+</resources>

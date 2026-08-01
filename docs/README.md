@@ -14,6 +14,11 @@ have to re-derive them from scratch.
   Android TV/Google TV client (`android-tv/`, a separate Gradle project in
   this repo): package layout, the backend API it consumes, key design
   decisions, and gotchas already hit (don't reintroduce them).
+- [android-mobile.md](android-mobile.md) — architecture of the native
+  Android phone/tablet client (`android-mobile/`, another separate Gradle
+  project): what's different from the TV app (touch UI, no clock/weather,
+  the dual internal/external server-profile auto-reachability design),
+  package layout, key design decisions.
 - [adding-a-dj.md](adding-a-dj.md) — end-to-end walkthrough for introducing
   a new DJ persona/voice: the Chatterbox-side voice clip, the `config.json`
   entry, optional photo, and wiring a show's brief to actually use it.

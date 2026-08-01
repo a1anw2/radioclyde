@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext HTTP is required because the station server has no TLS
+  certificate (self-hosted LAN box). android:usesCleartextTraffic would open
+  this to every domain, so instead this scopes cleartext to the domain
+  suffixes actually in play for this deployment: .lan / .local (LAN
+  hostnames), .ts.net (Tailscale MagicDNS), .home.arpa.
+
+  This is a static, build-time list; it cannot express a CIDR range or an
+  arbitrary user-entered IP literal. If the Settings screen is pointed at a
+  bare IP instead of a hostname, that exact IP must be added here and the
+  app rebuilt/reinstalled. Prefer entering a hostname (e.g. "yourserver.lan"
+  or a Tailscale MagicDNS name) in Settings for this reason.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false"/>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">lan</domain>
+        <domain includeSubdomains="true">local</domain>
+        <domain includeSubdomains="true">ts.net</domain>
+        <domain includeSubdomains="true">home.arpa</domain>
+    </domain-config>
+</network-security-config>

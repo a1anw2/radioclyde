@@ -7,8 +7,8 @@ AI-written DJ script, and its own synthesized DJ voice. When nothing's
 scheduled, it falls back to shuffled library filler instead of going quiet.
 
 Tune in however you like: the raw Icecast stream in any player, a clean web
-now-playing page in the browser, or a native Google TV app built for the
-living room.
+now-playing page in the browser, a native Google TV app built for the
+living room, or a native Android phone/tablet app for listening on the go.
 
 Nothing here is a hosted service or SaaS: it's orchestration code you run
 against your own Plex server, your own local LLM, and your own TTS engine,
@@ -70,6 +70,10 @@ phases hand off through.
   history, and upcoming shows, plus an authenticated stream proxy.
 - **Native Android TV / Google TV app**: a Leanback client for the same API
   (now-playing card, live clock/weather, playback controls, history).
+- **Native Android phone/tablet app**: a touch client for the same API, with
+  two switchable server profiles (home network vs. away) that auto-select by
+  reachability, so the same app works whether you're on the station's LAN or
+  out and about.
 - **Plex scrobbling**: actual airplay updates Plex's own play count/history,
   gated on real listener count so airtime to nobody doesn't inflate it.
 - **Production-ready as a systemd service**: unit files for the scheduler
@@ -131,6 +135,7 @@ now-playing page and the Google TV app.
 | **Icecast** | The actual stream server listeners connect to |
 | **Fastify** | Web server: now-playing page, JSON API, authenticated stream proxy |
 | **Android TV / Google TV app** (`android-tv/`) | Native Java/Leanback client, independent Gradle project |
+| **Android mobile app** (`android-mobile/`) | Native Java/Material phone-tablet client, independent Gradle project |
 
 ## Setup
 
@@ -236,3 +241,7 @@ station.json entry required):
 - [docs/android-tv-app.md](docs/android-tv-app.md): architecture of the
   native Android TV/Google TV client. Package layout, the backend API it
   consumes, key design decisions.
+- [docs/android-mobile.md](docs/android-mobile.md): architecture of the
+  native Android phone/tablet client. What's different from the TV app
+  (touch UI, no clock/weather, the dual server-profile auto-reachability
+  design), package layout, key design decisions.
