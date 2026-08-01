@@ -241,6 +241,18 @@ public class PlaybackActivity extends FragmentActivity {
         }
     }
 
+    /**
+     * Set directly from the Activity's own poll (like applyStationLogo)
+     * rather than left solely to applyMetadata's MediaController round trip
+     * -- that path depends on PlaybackService's own poll landing and its
+     * result reaching the MediaController, which can lag well behind this
+     * screen opening, leaving the show name stuck on the placeholder title
+     * right after startup.
+     */
+    private void applyShowName(Show show) {
+        showNameView.setText(show != null && show.name != null ? show.name : getString(R.string.app_name));
+    }
+
     private void updatePlayPauseIcon(boolean isPlaying) {
         playPauseButton.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
     }
@@ -263,6 +275,7 @@ public class PlaybackActivity extends FragmentActivity {
                     if (!isFinishing() && !isDestroyed()) {
                         historyAdapter.submit(displayEntries);
                         applyStationLogo(nowPlaying.show);
+                        applyShowName(nowPlaying.show);
                     }
                 });
             } catch (IOException e) {

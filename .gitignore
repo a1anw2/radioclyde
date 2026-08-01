@@ -22,3 +22,7 @@ android-tv/build/
 android-tv/captures/
 android-tv/.cxx/
 android-tv/local.settings.json
+
+# Local dev device inventory (LAN IP:port for adb network debugging) --
+# machine-specific, not shared/checked in.
+android-tv/devices.json

@@ -41,7 +41,11 @@ export function composeNowPlaying() {
   const { track, dj } = readNowPlayingTrack();
   const station = { name: loadStation().name ?? null, streamUrl: streamUrl() };
 
-  if (!state) {
+  // A finished show's state is left in place until the next occurrence is
+  // ready to load (see updateNowPlaying's comment on filler taking over on
+  // its own) -- once its estimated runtime has elapsed, filler is what's
+  // actually on air, not the show state still points to.
+  if (!state || Date.now() >= state.estimatedEndAt) {
     return { station, show: null, track, dj, scheduledStart: null, estimatedEndAt: null };
   }
 
@@ -53,6 +57,6 @@ export function composeNowPlaying() {
     track,
     dj,
     scheduledStart: showEntry?.startTime ?? null,
-    estimatedEndAt: state.estimatedEndAt ?? null,
+    estimatedEndAt: state.estimatedEndAt,
   };
 }
