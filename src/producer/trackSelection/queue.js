@@ -196,6 +196,7 @@ export async function buildTrackQueue({
   folder,
   artistList,
   albumGenre,
+  recentlyAdded = false,
   excludeKeywords = [],
   maxTrackDurationSeconds,
   repeatArtist = true,
@@ -222,9 +223,9 @@ export async function buildTrackQueue({
     });
   }
 
-  if (!artist && !genre && !decade && !albumKeyword && !folder && !artistList?.length && !albumGenre) {
+  if (!artist && !genre && !decade && !albumKeyword && !folder && !artistList?.length && !albumGenre && !recentlyAdded) {
     throw new Error(
-      'buildTrackQueue requires at least one of: artist, genre, decade, albumKeyword, folder, artistList, albumGenre'
+      'buildTrackQueue requires at least one of: artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded'
     );
   }
   if (!targetDurationMinutes) {
@@ -232,7 +233,7 @@ export async function buildTrackQueue({
   }
 
   const maxTrackDurationMs = maxTrackDurationSeconds ? maxTrackDurationSeconds * 1000 : undefined;
-  const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre });
+  const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
   const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
   // maxTrackDurationSeconds is a plain mechanical length cutoff -- applied
   // here as a post-fetch prune, same as recently-played exclusion. The

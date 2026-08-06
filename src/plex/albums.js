@@ -53,6 +53,22 @@ export async function fetchAlbumsByAlbumGenre(name) {
   return (data.MediaContainer.Metadata ?? []).map(albumFromMetadata);
 }
 
+// Recently-added albums, newest first -- Plex's addedAt sort on the same
+// /all endpoint every other album fetch uses here, rather than the separate
+// /recentlyAdded view (keeps this one shape for every album query in the
+// file). "Recent" means "the last N albums added" (matching Plex's own
+// Recently Added semantics), not a fixed day cutoff -- a quiet library still
+// gets a full pool to draw from, and a busy one doesn't drown in months-old
+// albums that happen to fall inside some arbitrary day window.
+const RECENTLY_ADDED_ALBUM_LIMIT = 40;
+
+export async function fetchRecentlyAddedAlbums() {
+  const data = await plexGet(
+    `/library/sections/${config.plex.librarySectionId}/all?type=${TYPE_ALBUM}&sort=addedAt:desc&X-Plex-Container-Start=0&X-Plex-Container-Size=${RECENTLY_ADDED_ALBUM_LIMIT}`
+  );
+  return (data.MediaContainer.Metadata ?? []).map(albumFromMetadata);
+}
+
 async function fetchAlbumsByArtist(name) {
   const artistId = await resolveArtistId(name);
   const data = await plexGet(

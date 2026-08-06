@@ -2,7 +2,13 @@ import { config } from '../config/index.js';
 import { plexGet, TYPE_TRACK } from './client.js';
 import { resolveGenreId } from './genres.js';
 import { resolveArtistId } from './artists.js';
-import { fetchAlbumsByDecade, fetchAlbumsByAlbumGenre, fetchAlbumsByKeyword, fetchAlbumTracks } from './albums.js';
+import {
+  fetchAlbumsByDecade,
+  fetchAlbumsByAlbumGenre,
+  fetchAlbumsByKeyword,
+  fetchRecentlyAddedAlbums,
+  fetchAlbumTracks,
+} from './albums.js';
 import { mapWithConcurrency } from '../lib/concurrency.js';
 
 export function trackFromMetadata(t) {
@@ -90,6 +96,16 @@ async function fetchTracksByAlbumGenre(name) {
   return perAlbum.flat();
 }
 
+// Track-level counterpart to fetchRecentlyAddedAlbums, same "resolve
+// albums, then fetch each one's tracks via /children" shape as
+// fetchTracksByDecade/fetchTracksByAlbumGenre -- addedAt has no track-level
+// filter param either.
+async function fetchTracksByRecentlyAdded() {
+  const albums = await fetchRecentlyAddedAlbums();
+  const perAlbum = await mapWithConcurrency(albums, 10, (album) => fetchAlbumTracks(album.ratingKey));
+  return perAlbum.flat();
+}
+
 async function fetchTracksByAlbumKeyword(keyword) {
   const albums = await fetchAlbumsByKeyword(keyword);
   if (albums.length === 0) {
@@ -165,7 +181,17 @@ async function fetchTracksByTitle(name) {
 // independently and intersecting by ratingKey -- picking one "primary"
 // filter and ignoring the rest (an earlier version did that) silently drops
 // filters instead of narrowing by them, which is worse than erroring.
-export async function fetchCandidateTracks({ artist, title, genre, decade, albumKeyword, folder, artistList, albumGenre } = {}) {
+export async function fetchCandidateTracks({
+  artist,
+  title,
+  genre,
+  decade,
+  albumKeyword,
+  folder,
+  artistList,
+  albumGenre,
+  recentlyAdded,
+} = {}) {
   const filterSets = [];
   if (decade) filterSets.push(await fetchTracksByDecade(decade));
   if (genre) filterSets.push(await fetchTracksByGenre(genre)); // throws listing valid genres if unknown
@@ -174,6 +200,7 @@ export async function fetchCandidateTracks({ artist, title, genre, decade, album
   if (folder) filterSets.push(await fetchTracksByFolder(folder)); // throws if no track path matches
   if (artistList?.length) filterSets.push(await fetchTracksByArtistList(artistList)); // throws if none resolve
   if (albumGenre) filterSets.push(await fetchTracksByAlbumGenre(albumGenre)); // throws listing valid album genres if unknown
+  if (recentlyAdded) filterSets.push(await fetchTracksByRecentlyAdded());
   if (title && filterSets.length === 0) filterSets.push(await fetchTracksByTitle(title));
 
   let candidates;

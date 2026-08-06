@@ -56,6 +56,11 @@ function queryTool() {
             description:
               'Pick the closest real tag from the provided ALBUM genre list, if the brief explicitly says to use album genre (a separate, richer tag vocabulary from track genre in this library -- includes tags like "Instrumental" that only exist at the album level). Only set this when the brief specifically calls for album genre rather than plain genre.',
           },
+          recentlyAdded: {
+            type: 'boolean',
+            description:
+              'true if the brief wants tracks pulled from whatever albums were most recently added to the library (e.g. "new additions", "what\'s just arrived") rather than a themed artist/genre/decade/folder selection.',
+          },
           singleAlbum: {
             type: 'boolean',
             description:
