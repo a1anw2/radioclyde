@@ -112,7 +112,7 @@ Use `lib/logger.js`'s `createLogger(name)`, writing to
 for everything under the scheduler daemon (producer, director, plex,
 scheduler jobs, CLI tools) and `'web'` for `src/server/`. Don't reach for a
 new logging approach or a third logger name — these two map onto the two
-systemd services (`radiocylde-scheduler`, `radioclyde-web`), which is the
+systemd services (`radioclyde-scheduler`, `radioclyde-web`), which is the
 granularity that matters for reading/rotating logs.
 
 `logsDir` files rotate automatically: once `<name>.log` passes 10MB it's

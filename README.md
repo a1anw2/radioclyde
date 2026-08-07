@@ -148,7 +148,7 @@ now-playing page and the Google TV app.
    deliberately kept outside the repo. See [sample-data/](sample-data/) for a
    working example to copy as a starting point.
 4. Run the scheduler (`npm run runstation`, or install
-   `radiocylde-scheduler.service` via systemd for production).
+   `radioclyde-scheduler.service` via systemd for production).
 
 ## Writing a show's Track Selection brief
 

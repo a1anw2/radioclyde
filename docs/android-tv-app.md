@@ -184,7 +184,7 @@ it's a one-shot fetch from a bare service context, not a recycling view.
 - **A plain `kill`/`SIGTERM` does not trigger a systemd unit's
   `Restart=on-failure`** — that policy explicitly excludes normal signal
   termination. Irrelevant to the app itself, but bit the station server
-  (`radioclyde-web`/`radiocylde-scheduler`) during this same work: restarting
+  (`radioclyde-web`/`radioclyde-scheduler`) during this same work: restarting
   those services to pick up code changes needs an actual
   `systemctl restart`, not a manual kill.
 

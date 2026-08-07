@@ -1,6 +1,6 @@
 # Documentation
 
-Design rationale and hard-won empirical facts for the radiocylde show-producer
+Design rationale and hard-won empirical facts for the radioclyde show-producer
 pipeline redesign (started 2026-07-26), kept here so a future session doesn't
 have to re-derive them from scratch.
 

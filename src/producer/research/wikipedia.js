@@ -6,7 +6,7 @@ const SUMMARY_API = 'https://en.wikipedia.org/api/rest_v1/page/summary/';
 // from and worse than ordinary rate-limiting -- confirmed we don't want to
 // find out the hard way twice. No hard numeric rate limit is published for
 // read requests; it's a "be considerate, identify yourself" policy.
-const USER_AGENT = 'radiocylde/0.1.0 (self-hosted internet radio project, non-commercial)';
+const USER_AGENT = 'radioclyde/0.1.0 (self-hosted internet radio project, non-commercial)';
 
 function requestHeaders() {
   return { Accept: 'application/json', 'User-Agent': USER_AGENT };

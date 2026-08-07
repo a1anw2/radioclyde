@@ -159,7 +159,7 @@ existing callers)
 - **Request pacing**: 300ms between each track's Wikipedia request, to
   reduce (not guarantee against) retriggering rate limiting.
 - **User-Agent**: `wikipedia.js`'s requests now send a proper identifying
-  `User-Agent` (`radiocylde/0.1.0 (self-hosted internet radio project,
+  `User-Agent` (`radioclyde/0.1.0 (self-hosted internet radio project,
   non-commercial)`). Wikimedia's API etiquette
   (mediawiki.org/wiki/API:Etiquette) explicitly calls out a missing/generic
   User-Agent as risking an outright **IP block**, separate from and worse
