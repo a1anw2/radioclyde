@@ -9,7 +9,8 @@
     "exaggeration": 0.4,
     "cfgWeight": 0.65,
     "temperature": 0.8,
-    "restartIntervalMinutes": 1440
+    "restartIntervalMinutes": 1440,
+    "requestTimeoutMinutes": 20
   },
   "icecast": {
     "sourceHost": "localhost",
@@ -59,7 +60,8 @@
     "prewarmCheckIntervalMinutes": 15,
     "nowPlayingCheckIntervalMinutes": 1,
     "scheduleWatchIntervalMinutes": 1,
-    "maxCatchUpMinutes": 10
+    "maxCatchUpMinutes": 10,
+    "minLeadTimeMinutes": 30
   },
   "filler": {
     "poolSize": 200,

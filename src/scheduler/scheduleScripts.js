@@ -42,6 +42,20 @@ export async function checkAndTriggerScripts() {
     const showDateDir = scheduleUtil.dateDir(weekday, show.id, date);
     if (fs.existsSync(path.join(showDateDir, 'script.md'))) continue;
     if (inFlight.has(showDateDir)) continue;
+
+    // Getting out ahead, not catching up: production reliably takes at
+    // least config.schedule.minLeadTimeMinutes end to end (and script
+    // production is only the first half of it, direct/TTS still to come),
+    // so an occurrence with less runway than that left before air can't
+    // finish in time no matter when we start -- skip it here, before ever
+    // touching the queue. This is per-occurrence, not per-show/day: a
+    // same-day repeat (e.g. Elvis at 10am and 2pm) will just have this
+    // check fail on the 10am iteration and succeed on the 2pm one.
+    if (!scheduleUtil.hasLeadTime(date, show, new Date())) {
+      log(`Show "${show.id}" (${weekday} ${date}) -- less than ${config.schedule.minLeadTimeMinutes ?? 30}min before air, skipping instead of starting something that can't finish in time.`);
+      continue;
+    }
+
     inFlight.add(showDateDir);
 
     // Not necessarily "kicking off" yet -- runSerialized may still be
@@ -53,7 +67,20 @@ export async function checkAndTriggerScripts() {
     try {
       // runSerialized: AI work must run one job at a time across the whole
       // station, never overlapping another show's script/direct job.
-      await runSerialized(() => generateScript({ id: show.id, weekday, date }));
+      await runSerialized(() => {
+        // Re-check on the way OUT of the queue: a backlog can delay this
+        // long enough that every occurrence of this show today has dropped
+        // below minLeadTimeMinutes (aired, or fallen out of reach) by the
+        // time it's this job's turn -- same reasoning as scheduleDirect.js's
+        // own check. anyOccurrenceHasLeadTime (not just the occurrence that
+        // triggered this) so a same-day repeat still gets its script as long
+        // as a later showing still has enough runway.
+        if (!scheduleUtil.anyOccurrenceHasLeadTime(schedule, weekday, show.id, date, new Date())) {
+          log(`Show "${show.id}" (${weekday} ${date}) -- less than ${config.schedule.minLeadTimeMinutes ?? 30}min before every remaining occurrence today, skipping script production instead of catching up.`);
+          return;
+        }
+        return generateScript({ id: show.id, weekday, date });
+      });
     } catch (err) {
       log(`Show "${show.id}" script production ERROR: ${err.stack || err.message}`);
     } finally {

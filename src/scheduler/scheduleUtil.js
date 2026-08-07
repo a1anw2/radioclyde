@@ -116,6 +116,53 @@ function absoluteStart(date, startTime) {
   return d.getTime();
 }
 
+// True once a show/date's dj-audio has been fully synthesized by the
+// downtime prewarm pass (schedulePrewarmAudio.js writes this marker only
+// after every cached segment succeeds) -- confirmed live 2026-08-07: a show
+// in this state directs in under a second (every dj line is a cache hit;
+// only genuine `live` weather/time segments still need fresh synthesis),
+// completely unlike the minutes-per-line cost minLeadTimeMinutes is sized
+// for. Read-only file check, cheap enough to call on every lead-time check.
+export function isDjAudioPrewarmed(weekday, showId, date) {
+  return fs.existsSync(path.join(dateDir(weekday, showId, date), 'dj-audio', '.prewarmed'));
+}
+
+// True once fewer than config.schedule.minLeadTimeMinutes remain before an
+// occurrence's scheduled start. Producing a show (script + TTS, end to end)
+// reliably takes at least that long, so starting work with less runway than
+// that can only ever finish late -- there's no "window" to still catch, only
+// a slot that's better left to filler. This is a forward-looking floor, not
+// just "has it already aired": a show still 20 minutes out is exactly as
+// unproducible-in-time as one that aired an hour ago. Checked both when
+// first deciding whether an occurrence is worth queuing, and again right as
+// a queued job comes off the queue -- a busy queue can itself eat enough of
+// that runway that a show worth starting when queued no longer is by the
+// time it's its turn.
+//
+// Bypassed entirely when the show's dj-audio is already fully prewarmed
+// (see isDjAudioPrewarmed) -- confirmed live 2026-08-07: two shows with
+// stale/near-zero runway (country, ed-sheeran) both directed in under a
+// second once prewarmed, because minLeadTimeMinutes budgets for TTS
+// synthesis that, in the prewarmed case, never happens. Without this, a
+// fully-ready show past its runway floor gets skipped forever even though
+// directing it is instant -- the exact failure that left the station on
+// filler on 2026-08-07 while several complete shows sat unused.
+export function hasLeadTime(date, show, now, weekday) {
+  if (weekday && isDjAudioPrewarmed(weekday, show.id, date)) return true;
+  const minLeadTimeMs = (config.schedule.minLeadTimeMinutes ?? 30) * 60 * 1000;
+  return absoluteStart(date, show.startTime) - now.getTime() >= minLeadTimeMs;
+}
+
+// Same idea as hasLeadTime, but for script production, which is keyed per
+// show/day rather than per occurrence -- a same-day repeat (e.g. Elvis at
+// 10am and 2pm) shares one script.md, so it's still worth producing as long
+// as ANY of today's occurrences still has enough runway, even if the
+// specific occurrence that triggered this particular check no longer does.
+export function anyOccurrenceHasLeadTime(schedule, weekday, showId, date, now) {
+  const todays = (schedule[weekday] ?? []).filter((s) => s.id === showId);
+  return todays.some((s) => hasLeadTime(date, s, now, weekday));
+}
+
 function sortedDayShows(schedule, weekday) {
   return [...(schedule[weekday] ?? [])].sort(
     (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)

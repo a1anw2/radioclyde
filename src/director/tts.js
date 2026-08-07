@@ -1,4 +1,28 @@
+// fetch/Agent imported from undici itself, NOT Node's global fetch() --
+// Node's global fetch is powered by its own internally-vendored undici, a
+// different instance/version than the one installed in node_modules, and
+// handing a dispatcher built from the latter to the former throws
+// "InvalidArgumentError: invalid onRequestStart method" (confirmed
+// 2026-08-06). Using undici's own fetch alongside its own Agent keeps both
+// sides on one consistent implementation.
+import { fetch, Agent } from 'undici';
 import { config } from '../config/index.js';
+
+// Chatterbox runs CPU-only on this box -- a single line routinely takes
+// several minutes to synthesize, which is normal, not a hang. undici's
+// *default* Agent enforces its own ~5min headers/body timeouts independently
+// of any AbortSignal a caller passes in -- a longer AbortSignal does not
+// override or extend that underlying default, so it still fires and kills a
+// slow-but-healthy request (confirmed 2026-08-06: Chatterbox's own log
+// showed the request completing successfully several minutes after Node had
+// already given up on it and thrown a bare "fetch failed" with nothing
+// server-side to explain it). Fixed by giving this request its own
+// dispatcher with a generous explicit ceiling instead of relying on the
+// ambient default.
+const dispatcher = new Agent({
+  headersTimeout: (config.chatterbox.requestTimeoutMinutes ?? 20) * 60 * 1000,
+  bodyTimeout: (config.chatterbox.requestTimeoutMinutes ?? 20) * 60 * 1000,
+});
 
 // exaggeration/cfgWeight/temperature are Chatterbox's own generation knobs,
 // left out of the request (falling back to its server-side defaults) unless
@@ -19,6 +43,7 @@ async function requestSynthesis(text, voiceFile) {
       ...(cfgWeight != null && { cfg_weight: cfgWeight }),
       ...(temperature != null && { temperature }),
     }),
+    dispatcher,
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

@@ -15,19 +15,52 @@ const log = createLogger('station');
 
 const TIME_KEY_RE = /^\d{2}-\d{2}$/;
 
-// showOccurrenceDir -> true while a directShow() job for it is queued or
-// running. scheduler.js's setInterval fires checkAndTriggerDirect on a fixed
-// clock without waiting for the previous call to finish -- without this
-// guard, a directShow() queued behind other work on runSerialized (and so
-// taking longer than directCheckIntervalMinutes) gets re-triggered by every
-// subsequent tick that still finds no playlist.m3u, each one piling on
+// showOccurrenceDir -> { enqueuedAt, warned } while a directShow() job for it
+// is queued or running. scheduler.js's setInterval fires checkAndTriggerDirect
+// on a fixed clock without waiting for the previous call to finish -- without
+// this guard, a directShow() queued behind other work on runSerialized (and
+// so taking longer than directCheckIntervalMinutes) gets re-triggered by
+// every subsequent tick that still finds no playlist.m3u, each one piling on
 // another redundant, duplicate TTS run for the same occurrence. Shared with
 // rebuildIncompleteOccurrences() below so its startup pass and this file's
 // own interval can never both queue the same occurrence at once either.
-const inFlight = new Set();
+const inFlight = new Map();
+
+// Past this, an occurrence that's still sitting in inFlight isn't "running
+// long" anymore -- confirmed live 2026-08-06/07: a direct job silently sat
+// queued for over 13 hours with no "Starting direct", no ERROR, and no
+// playlist.m3u ever produced, and nothing surfaced that until a human
+// happened to go looking. Even a worst-case all-uncached show (20+ lines,
+// several CPU-only minutes each) finishes well under this; anything still
+// stuck past it is stalled, not slow, and worth a loud log line instead of
+// staying invisible for hours.
+const STALL_WARNING_MS = (config.schedule.directStallWarningMinutes ?? 90) * 60 * 1000;
 
 async function directOccurrence(show, weekday, date, timeKey, showOccurrenceDir) {
-  if (inFlight.has(showOccurrenceDir)) return; // already kicked off on a prior tick/pass, still running
+  const existing = inFlight.get(showOccurrenceDir);
+  if (existing) {
+    const elapsedMs = Date.now() - existing.enqueuedAt;
+    if (elapsedMs > STALL_WARNING_MS && !existing.warned) {
+      existing.warned = true;
+      log(`Show "${show.id}" (${weekday} ${date} ${timeKey}) -- STALLED: still queued/running ${Math.round(elapsedMs / 60000)}min after being queued for direct, with no completion or error logged. Likely stuck, not slow.`);
+    }
+    return; // already kicked off on a prior tick/pass, still running
+  }
+
+  // Getting out ahead, not catching up: production (script already done by
+  // this point, TTS synthesis still to go) reliably takes at least
+  // config.schedule.minLeadTimeMinutes end to end, so an occurrence with
+  // less runway than that left before air can't finish in time no matter
+  // when we start it -- checked here, before ever touching the queue, so a
+  // stale rebuild pass or a too-soon occurrence doesn't even cost a queue
+  // slot. Applies equally to a show that's still slightly in the future and
+  // one whose air time is already well behind us (checkAndTriggerDirect only
+  // calls this for the former; rebuildIncompleteOccurrences's startup sweep
+  // can hand it either).
+  if (!scheduleUtil.hasLeadTime(date, show, new Date(), weekday)) {
+    log(`Show "${show.id}" (${weekday} ${date} ${timeKey}) -- less than ${config.schedule.minLeadTimeMinutes ?? 30}min before air, skipping instead of starting something that can't finish in time.`);
+    return;
+  }
 
   // Same caveat as scheduleScripts.js: this may just be joining the queue
   // behind another show's still-running script/direct job, not actually
@@ -35,11 +68,22 @@ async function directOccurrence(show, weekday, date, timeKey, showOccurrenceDir)
   // now" log line, so the first per-segment TTS log line is the real
   // start signal.
   log(`Show "${show.id}" airs at ${timeKey} on ${weekday} ${date} -- queuing for direct.`);
-  inFlight.add(showOccurrenceDir);
+  inFlight.set(showOccurrenceDir, { enqueuedAt: Date.now(), warned: false });
   try {
     // runSerialized: shared with scheduleScripts.js so directing/TTS never
     // overlaps script generation, or another show's directing.
-    await runSerialized(() => directShow({ id: show.id, weekday, date, timeKey }));
+    await runSerialized(() => {
+      // Re-check on the way OUT of the queue too: a busy queue can itself
+      // eat enough of the runway that a show worth starting when queued no
+      // longer is by the time it's this job's turn. Skip it so the next
+      // occurrence (the one still worth airing) gets the queue instead of it
+      // grinding sequentially through everything that's gone stale.
+      if (!scheduleUtil.hasLeadTime(date, show, new Date(), weekday)) {
+        log(`Show "${show.id}" (${weekday} ${date} ${timeKey}) -- less than ${config.schedule.minLeadTimeMinutes ?? 30}min before air, skipping instead of catching up.`);
+        return;
+      }
+      return directShow({ id: show.id, weekday, date, timeKey });
+    });
   } catch (err) {
     log(`Show "${show.id}" direct ERROR: ${err.stack || err.message}`);
   } finally {
