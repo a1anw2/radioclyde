@@ -35,6 +35,13 @@ export function describeWeatherCode(code) {
   return WEATHER_CODE_DESCRIPTIONS[code] ?? 'unusual conditions';
 }
 
+// 15s: a plain third-party REST GET has no business running long -- unlike
+// Chatterbox/LM Studio, there's no "normal but slow" case to accommodate
+// here, only a hang to guard against. Confirmed live 2026-08-07/08: this
+// call previously had no timeout at all, and directShow() (via
+// resolveLiveLine()) awaits it directly -- a single hung request here froze
+// the entire shared production queue indefinitely with no error logged,
+// exactly like the un-timed-out LM Studio call in src/llm/client.js.
 export async function fetchCurrentWeather() {
   const { url, latitude, longitude, timezone } = config.weather;
   const qs = new URLSearchParams({
@@ -45,7 +52,7 @@ export async function fetchCurrentWeather() {
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
   });
-  const res = await fetch(`${url}?${qs}`);
+  const res = await fetch(`${url}?${qs}`, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) {
     throw new Error(`Open-Meteo request failed: ${res.status} ${res.statusText}`);
   }

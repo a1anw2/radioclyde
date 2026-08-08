@@ -2,7 +2,8 @@
   "dataDir": "/radio",
   "lmStudio": {
     "url": "http://192.168.1.50:1234/v1/chat/completions",
-    "model": "qwen3.6-35b-a3b"
+    "model": "qwen3.6-35b-a3b",
+    "requestTimeoutMinutes": 3
   },
   "chatterbox": {
     "url": "http://yourserver.lan:8004/tts",
