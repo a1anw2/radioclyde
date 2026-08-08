@@ -59,6 +59,7 @@
     "directLeadTimeMinutes": 15,
     "directCheckIntervalMinutes": 2,
     "prewarmCheckIntervalMinutes": 15,
+    "prewarmHorizonMinutes": 1440,
     "nowPlayingCheckIntervalMinutes": 1,
     "scheduleWatchIntervalMinutes": 1,
     "maxCatchUpMinutes": 10,

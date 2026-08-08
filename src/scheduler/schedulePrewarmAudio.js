@@ -1,14 +1,25 @@
-// Downtime trigger: while station.json's downtime window is active, warms
-// every scheduled show's dj-audio cache as far ahead as the next downtime
-// window (i.e. the whole broadcast day) -- so the bulk of TTS synthesis
-// happens while filler is playing and nothing needs the resource, and
-// scheduleDirect.js's own near-air-time pass (unchanged) finds the cache
-// already warm and only has to resolve genuinely live content (weather/time)
-// and finish assembly. A no-op outside the downtime window, or if
-// station.json has no "downtime" configured. Called on its own interval by
-// scheduler.js; also safe to call directly for a manual dry-run.
+// Prewarm trigger: continuously warms every scheduled show's dj-audio cache
+// as far ahead as config.schedule.prewarmHorizonMinutes (default 24h) --
+// runs on every tick, any time of day, not just during station.json's
+// downtime window. It used to be downtime-only, on the idea that the bulk of
+// TTS synthesis should happen while filler is playing and nothing needs the
+// resource. In practice that meant a show airing outside the downtime window
+// (e.g. an evening slot, script produced hours in advance but never
+// prewarmed because prewarm itself only ran overnight) fell through to
+// scheduleDirect.js's near-air-time pass with nothing cached, forcing live
+// per-line synthesis -- several CPU-only minutes per line -- that blocked
+// the shared queue for the better part of an hour and knocked the station
+// onto filler (confirmed live 2026-08-07 with "british-artists"). Now it
+// picks up any show with a script and no `.prewarmed` marker whenever the
+// queue is free, same as before, just without the time-of-day gate. The
+// horizon cap keeps it from burning synthesis on a show so far out its
+// schedule could still change before it airs; downtime still gets scripts
+// produced a full day ahead (scheduleScripts.js), so this mostly just
+// catches up on whatever that pass left unwarmed. Called on its own
+// interval by scheduler.js; also safe to call directly for a manual dry-run.
 import fs from 'node:fs';
 import path from 'node:path';
+import { config } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import * as scheduleUtil from './scheduleUtil.js';
 import { prewarmShowAudio } from '../director/prewarmAudio.js';
@@ -23,12 +34,9 @@ const log = createLogger('station');
 const inFlight = new Set();
 
 export async function checkAndTriggerPrewarmAudio() {
-  const downtime = scheduleUtil.loadDowntime();
-  const now = new Date();
-  if (!scheduleUtil.isDowntime(downtime, now)) return;
-
   const schedule = scheduleUtil.loadSchedule();
-  const horizon = scheduleUtil.minutesUntilNextDowntimeStart(downtime, now);
+  const now = new Date();
+  const horizon = config.schedule.prewarmHorizonMinutes ?? 24 * 60;
 
   for (const { show, weekday, date } of scheduleUtil.upcomingOccurrences(schedule, now, horizon)) {
     const showDateDir = scheduleUtil.dateDir(weekday, show.id, date);
@@ -41,11 +49,11 @@ export async function checkAndTriggerPrewarmAudio() {
     if (inFlight.has(showDateDir)) continue;
     inFlight.add(showDateDir);
 
-    log(`Show "${show.id}" (${weekday} ${date}) -- queuing for downtime dj-audio prewarm.`);
+    log(`Show "${show.id}" (${weekday} ${date}) -- queuing for dj-audio prewarm.`);
     try {
       // runSerialized: shared with scheduleScripts.js/scheduleDirect.js so
-      // this downtime prewarm work never overlaps another show's
-      // script/direct job or another prewarm pass.
+      // this prewarm work never overlaps another show's script/direct job
+      // or another prewarm pass.
       await runSerialized(() => prewarmShowAudio({ id: show.id, weekday, date }));
       fs.mkdirSync(djAudioDir, { recursive: true });
       fs.writeFileSync(markerPath, new Date().toISOString());
