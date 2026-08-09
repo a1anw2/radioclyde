@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(journalctl -u radiocylde-scheduler.service --no-pager -S \"-2min\")",
+      "Bash(journalctl -u chatterbox-tts.service --no-pager -S \"2026-08-06 16:37:00\" -U \"2026-08-06 16:48:00\")",
+      "Bash(node -e \"import\\('node:undici'\\).then\\(m => console.log\\(Object.keys\\(m\\).filter\\(k=>/Agent|Dispatcher/.test\\(k\\)\\)\\)\\)\")",
+      "Bash(node --check src/director/tts.js)",
+      "Bash(node -e ' *)",
+      "Bash(echo \"scheduler stop exit:$?\")",
+      "Bash(echo \"chatterbox stop exit:$?\")",
+      "Bash(echo \"web stop exit:$?\")",
+      "Bash(python3 -c ' *)",
+      "Bash(node --check src/scheduler/restartChatterbox.js)"
+    ]
+  }
+}
