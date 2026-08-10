@@ -88,7 +88,7 @@ function queryTool() {
           maxTrackDurationSeconds: {
             type: 'number',
             description:
-              'Maximum track length in seconds, if the brief implies a cap (e.g. "no tracks over 5 minutes" -> 300, "radio edits only, under 3:30" -> 210).',
+              'Maximum track length in seconds, if the brief implies a cap (e.g. "no tracks over 5 minutes" -> 300, "radio edits only, under 3:30" -> 210). A station-wide 300s default applies whenever this is left unset, so only set it to override that default -- either a tighter cap the brief asks for, or a larger one for a brief that clearly wants longer tracks (e.g. a classical or prog-rock show spanning full movements/epics).',
           },
         },
       },

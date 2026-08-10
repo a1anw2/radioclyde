@@ -6,6 +6,7 @@
 // it out into one deterministic pass is what actually fixes the duration-
 // fitting and catalog-variety problems that surfaced testing the AI-driven
 // version.
+import { config } from '../../config/index.js';
 import { fetchCandidateTracks } from '../../plex/tracks.js';
 import { fetchCandidateAlbums, fetchAlbumTracks, fetchAlbumsByFolder } from '../../plex/albums.js';
 import { dedupeByTitle, matchesExcludedKeyword, popularityWeight, weightedShuffle } from '../../plex/trackFilters.js';
@@ -127,7 +128,12 @@ export async function buildSingleAlbumTrackQueue({
     throw new Error('buildSingleAlbumTrackQueue requires targetDurationMinutes');
   }
 
-  const maxTrackDurationMs = maxTrackDurationSeconds ? maxTrackDurationSeconds * 1000 : undefined;
+  // Falls back to config.shows.maxTrackDurationSeconds (the station-wide
+  // default, same knob generateFillerPlaylist.js reads) unless the brief
+  // itself implied a different cap -- see the comment on this same fallback
+  // in buildTrackQueue below for why a default exists at all.
+  const effectiveMaxTrackDurationSeconds = maxTrackDurationSeconds ?? config.shows.maxTrackDurationSeconds;
+  const maxTrackDurationMs = effectiveMaxTrackDurationSeconds ? effectiveMaxTrackDurationSeconds * 1000 : undefined;
   const excludeAlbumKeys = recentlyPlayedAlbumKeys(repeatWindowDays);
   const excludeAlbumTitles = folder ? recentlyPlayedAlbumTitles(repeatWindowDays) : undefined;
   const targetMs = targetDurationMinutes * 60 * 1000;
@@ -232,13 +238,19 @@ export async function buildTrackQueue({
     throw new Error('buildTrackQueue requires targetDurationMinutes');
   }
 
-  const maxTrackDurationMs = maxTrackDurationSeconds ? maxTrackDurationSeconds * 1000 : undefined;
-  const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
-  const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
   // maxTrackDurationSeconds is a plain mechanical length cutoff -- applied
   // here as a post-fetch prune, same as recently-played exclusion. The
-  // value itself comes from the brief (e.g. "no tracks over 5 minutes" ->
-  // 300), extracted by the AI query-producer's produce_query schema.
+  // value itself normally comes from the brief (e.g. "no tracks over 5
+  // minutes" -> 300, extracted by the AI query-producer's produce_query
+  // schema), but most briefs never mention duration at all, so without a
+  // fallback nothing stopped a themed selection from landing on a 10+
+  // minute album cut. config.shows.maxTrackDurationSeconds is that
+  // fallback -- a brief that actually wants longer tracks still wins by
+  // having the AI set an explicit, larger maxTrackDurationSeconds.
+  const effectiveMaxTrackDurationSeconds = maxTrackDurationSeconds ?? config.shows.maxTrackDurationSeconds;
+  const maxTrackDurationMs = effectiveMaxTrackDurationSeconds ? effectiveMaxTrackDurationSeconds * 1000 : undefined;
+  const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
+  const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
   const eligible = dedupeByTitle(rawCandidates).filter(
     (t) =>
       !recentlyPlayed.has(String(t.ratingKey)) &&

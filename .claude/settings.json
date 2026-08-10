@@ -10,7 +10,9 @@
       "Bash(echo \"chatterbox stop exit:$?\")",
       "Bash(echo \"web stop exit:$?\")",
       "Bash(python3 -c ' *)",
-      "Bash(node --check src/scheduler/restartChatterbox.js)"
+      "Bash(node --check src/scheduler/restartChatterbox.js)",
+      "Bash(node --check src/producer/trackSelection/queue.js)",
+      "Bash(node --check src/producer/trackSelection/query.js)"
     ]
   }
 }

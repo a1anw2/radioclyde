@@ -71,7 +71,8 @@
     "maxTrackDurationSeconds": 600
   },
   "shows": {
-    "repeatWindowDays": 30
+    "repeatWindowDays": 30,
+    "maxTrackDurationSeconds": 300
   },
   "cleanup": {
     "retentionDays": 7,
