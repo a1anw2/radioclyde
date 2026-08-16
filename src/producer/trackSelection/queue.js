@@ -119,6 +119,7 @@ export async function buildSingleAlbumTrackQueue({
   albumGenre,
   excludeKeywords = [],
   maxTrackDurationSeconds,
+  minTrackDurationSeconds,
   targetDurationMinutes,
   djOverheadSeconds = DEFAULT_DJ_OVERHEAD_SECONDS,
   repeatWindowDays,
@@ -128,12 +129,14 @@ export async function buildSingleAlbumTrackQueue({
     throw new Error('buildSingleAlbumTrackQueue requires targetDurationMinutes');
   }
 
-  // Falls back to config.shows.maxTrackDurationSeconds (the station-wide
-  // default, same knob generateFillerPlaylist.js reads) unless the brief
-  // itself implied a different cap -- see the comment on this same fallback
-  // in buildTrackQueue below for why a default exists at all.
+  // Falls back to config.shows.max/minTrackDurationSeconds (the station-wide
+  // defaults, same knobs generateFillerPlaylist.js reads for the max) unless
+  // the brief itself implied a different cap -- see the comment on this same
+  // fallback in buildTrackQueue below for why a default exists at all.
   const effectiveMaxTrackDurationSeconds = maxTrackDurationSeconds ?? config.shows.maxTrackDurationSeconds;
   const maxTrackDurationMs = effectiveMaxTrackDurationSeconds ? effectiveMaxTrackDurationSeconds * 1000 : undefined;
+  const effectiveMinTrackDurationSeconds = minTrackDurationSeconds ?? config.shows.minTrackDurationSeconds;
+  const minTrackDurationMs = effectiveMinTrackDurationSeconds ? effectiveMinTrackDurationSeconds * 1000 : undefined;
   const excludeAlbumKeys = recentlyPlayedAlbumKeys(repeatWindowDays);
   const excludeAlbumTitles = folder ? recentlyPlayedAlbumTitles(repeatWindowDays) : undefined;
   const targetMs = targetDurationMinutes * 60 * 1000;
@@ -155,7 +158,10 @@ export async function buildSingleAlbumTrackQueue({
     // re-fetch by); everything else still looks them up via Plex.
     const rawTracks = album.tracks ?? (await fetchAlbumTracks(album.ratingKey));
     const eligible = dedupeByTitle(rawTracks).filter(
-      (t) => !matchesExcludedKeyword(t, excludeKeywords) && (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs)
+      (t) =>
+        !matchesExcludedKeyword(t, excludeKeywords) &&
+        (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs) &&
+        (!minTrackDurationMs || t.durationMs >= minTrackDurationMs)
     );
 
     if (eligible.length < 2) {
@@ -205,6 +211,7 @@ export async function buildTrackQueue({
   recentlyAdded = false,
   excludeKeywords = [],
   maxTrackDurationSeconds,
+  minTrackDurationSeconds,
   repeatArtist = true,
   oneTrackPerAlbum = false,
   weightPopular = false,
@@ -223,6 +230,7 @@ export async function buildTrackQueue({
       albumGenre,
       excludeKeywords,
       maxTrackDurationSeconds,
+      minTrackDurationSeconds,
       targetDurationMinutes,
       djOverheadSeconds,
       repeatWindowDays,
@@ -238,24 +246,28 @@ export async function buildTrackQueue({
     throw new Error('buildTrackQueue requires targetDurationMinutes');
   }
 
-  // maxTrackDurationSeconds is a plain mechanical length cutoff -- applied
-  // here as a post-fetch prune, same as recently-played exclusion. The
-  // value itself normally comes from the brief (e.g. "no tracks over 5
-  // minutes" -> 300, extracted by the AI query-producer's produce_query
-  // schema), but most briefs never mention duration at all, so without a
-  // fallback nothing stopped a themed selection from landing on a 10+
-  // minute album cut. config.shows.maxTrackDurationSeconds is that
-  // fallback -- a brief that actually wants longer tracks still wins by
-  // having the AI set an explicit, larger maxTrackDurationSeconds.
+  // max/minTrackDurationSeconds are plain mechanical length cutoffs --
+  // applied here as a post-fetch prune, same as recently-played exclusion.
+  // The values themselves normally come from the brief (e.g. "no tracks
+  // over 5 minutes" -> maxTrackDurationSeconds 300, extracted by the AI
+  // query-producer's produce_query schema), but most briefs never mention
+  // duration at all, so without a fallback nothing stopped a themed
+  // selection from landing on a 10+ minute album cut, or on a 30-second
+  // interlude/skit track. config.shows.max/minTrackDurationSeconds are
+  // those fallbacks -- a brief that actually wants a different range still
+  // wins by having the AI set an explicit override.
   const effectiveMaxTrackDurationSeconds = maxTrackDurationSeconds ?? config.shows.maxTrackDurationSeconds;
   const maxTrackDurationMs = effectiveMaxTrackDurationSeconds ? effectiveMaxTrackDurationSeconds * 1000 : undefined;
+  const effectiveMinTrackDurationSeconds = minTrackDurationSeconds ?? config.shows.minTrackDurationSeconds;
+  const minTrackDurationMs = effectiveMinTrackDurationSeconds ? effectiveMinTrackDurationSeconds * 1000 : undefined;
   const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
   const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
   const eligible = dedupeByTitle(rawCandidates).filter(
     (t) =>
       !recentlyPlayed.has(String(t.ratingKey)) &&
       !matchesExcludedKeyword(t, excludeKeywords) &&
-      (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs)
+      (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs) &&
+      (!minTrackDurationMs || t.durationMs >= minTrackDurationMs)
   );
 
   const ordered = weightPopular ? weightedShuffle(eligible, popularityWeight) : shuffle(eligible);
