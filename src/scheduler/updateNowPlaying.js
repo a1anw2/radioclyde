@@ -156,6 +156,23 @@ export async function updateNowPlaying() {
   log(`Now playing: "${show.id}" (${weekday} ${timeKey}) -> ${playlistPath}`);
 }
 
+// Studio admin's Force Next Show control. now_playing_state.json still has
+// exactly one writer (this module) -- the process merge (src/server/index.js
+// now also runs startScheduler() in-process) just means the studio route can
+// call straight in here instead of signaling a separate process and waiting
+// for its next tick. Rewrites estimatedEndAt to "now", which is exactly the
+// condition updateNowPlaying() above already checks (line 106) to decide the
+// loaded occurrence has finished, then runs the normal transition logic and
+// returns its real outcome (synchronously, from the caller's point of view).
+export async function forceNextOccurrence() {
+  const state = readNowPlayingState();
+  if (state) {
+    writeState({ ...state, estimatedEndAt: Date.now() });
+  }
+  await updateNowPlaying();
+  return readNowPlayingState();
+}
+
 async function main() {
   await updateNowPlaying();
 }

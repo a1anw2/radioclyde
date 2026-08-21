@@ -14,15 +14,26 @@
 
 let json.parse (config : {
   dataDir: string,
-  icecast: {sourceHost: string, port: int, mount: string, sourcePassword: string, bitrate: int}
+  icecast: {sourceHost: string, port: int, mount: string, sourcePassword: string, bitrate: int},
+  liquidsoap: {telnetHost: string, telnetPort: int}
 }) = file.contents("/home/ai/radioclyde/config.json")
+
+# Loopback-only, matching src/server/auth.js's trust model -- the studio
+# admin's Skip control (src/liquidsoap/telnetClient.js) is the only client,
+# running on this same box. show_source below gets an explicit id so it's
+# addressable as "show_source.skip" -- verify that command against the real
+# running build (`telnet 127.0.0.1 <port>` + `help`) before relying on it,
+# per this file's own fade.out()/crossfade() history below.
+settings.server.telnet.set(true)
+settings.server.telnet.bind_addr.set(config.liquidsoap.telnetHost)
+settings.server.telnet.port.set(config.liquidsoap.telnetPort)
 
 # mode="normal" plays the file's entries in order (this is a produced show,
 # not a shuffle playlist). loop=false: once an episode's segments are
 # exhausted, stay empty for whatever remains of the scheduled window rather
 # than restarting the episode from the top -- fallback() below then takes
 # over. reload_mode="watch" picks up scheduler/scheduler.js's edits without a restart.
-show_source = playlist(reload_mode="watch", mode="normal", loop=false, config.dataDir ^ "/now_playing.m3u")
+show_source = playlist(id="show_source", reload_mode="watch", mode="normal", loop=false, config.dataDir ^ "/now_playing.m3u")
 
 # Tried crossfade() here (asymmetric fade_in=3.5/fade_out=1.0/duration=3.5,
 # tuned via offline RMS-envelope testing against real DJ-audio + track

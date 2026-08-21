@@ -20,14 +20,10 @@
     "cleanup-shows": "node src/scheduler/cleanupOldShows.js",
     "runstation": "node src/scheduler/scheduler.js",
     "runweb": "node src/server/index.js",
-    "start-station": "sudo systemctl start radioclyde-scheduler",
-    "stop-station": "sudo systemctl stop radioclyde-scheduler",
-    "restart-station": "sudo systemctl restart radioclyde-scheduler",
-    "status-station": "systemctl status radioclyde-scheduler",
-    "start-web": "sudo systemctl start radioclyde-web",
-    "stop-web": "sudo systemctl stop radioclyde-web",
-    "restart-web": "sudo systemctl restart radioclyde-web",
-    "status-web": "systemctl status radioclyde-web"
+    "start-radioclyde": "sudo systemctl start radioclyde",
+    "stop-radioclyde": "sudo systemctl stop radioclyde",
+    "restart-radioclyde": "sudo systemctl restart radioclyde",
+    "status-radioclyde": "systemctl status radioclyde"
   },
   "dependencies": {
     "fastify": "^5.10.0",

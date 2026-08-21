@@ -1,0 +1,771 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-hover: #fafbfc;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #111827;
+  --muted: #6b7280;
+  --live: #16a34a;
+  --pending: #d97706;
+  --idle: #9ca3af;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff4ff;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.16);
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  flex: 0 0 208px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 1.75rem;
+  color: var(--text);
+  padding: 0 0.6rem;
+}
+
+.brand span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav-list a {
+  display: block;
+  padding: 0.55rem 0.65rem;
+  border-radius: 7px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.nav-list a:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav-list a.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.content {
+  flex: 1 1 auto;
+  padding: 2rem 2.5rem 4rem;
+  max-width: 1100px;
+}
+
+/* The schedule grid is the one view that's genuinely denser than 1100px
+   comfortably fits (7 day columns), unlike every text/form-oriented view
+   this width otherwise suits -- so it alone gets more room, scoped via
+   :has() rather than raising max-width globally. */
+.content:has(#view-schedule:not([hidden])) {
+  max-width: 1400px;
+}
+
+.view[hidden] {
+  display: none;
+}
+
+h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0;
+  margin-bottom: 0.85rem;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  text-decoration: underline;
+}
+
+h2 {
+  font-size: 0.8rem;
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .shell { flex-direction: column; }
+  .sidebar { flex: 0 0 auto; }
+  .columns { grid-template-columns: 1fr; }
+}
+
+/* On Air */
+
+.on-air-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 3px transparent;
+}
+
+.status-live { background: var(--live); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15); }
+.status-pending { background: var(--pending); box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15); }
+.status-idle { background: var(--idle); }
+
+.listener-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.on-air-main {
+  display: flex;
+  gap: 1.1rem;
+  align-items: center;
+}
+
+.on-air-art {
+  width: 92px;
+  height: 92px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.on-air-show {
+  margin: 0 0 0.2rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.on-air-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.on-air-artist {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+}
+
+.on-air-progress {
+  margin-top: 0.6rem;
+  max-width: 320px;
+}
+
+.progress-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--live);
+  border-radius: 999px;
+  transition: width 0.3s linear;
+}
+
+.progress-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.on-air-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.action-message {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.action-message.error {
+  color: var(--danger);
+}
+
+/* Buttons */
+
+.btn {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, transform 0.05s ease;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--muted);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: #fecaca;
+  background: var(--danger-bg);
+}
+
+.btn-danger:hover {
+  background: #fee2e2;
+  border-color: var(--danger);
+}
+
+/* Lists / tables */
+
+.data-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.data-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 7px;
+  background: var(--bg);
+}
+
+.data-list .time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.data-table td {
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar input[type="search"] {
+  flex: 1 1 auto;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  font-size: 0.85rem;
+  background: var(--surface);
+}
+
+.toolbar input[type="search"]:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* Forms */
+
+.show-editor form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.checkbox-row label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text);
+  font-weight: 400;
+}
+
+input, textarea, select {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Schedule grid */
+
+.view-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: -0.75rem 0 1.25rem;
+}
+
+.schedule-scroll {
+  max-height: 72vh;
+  overflow-y: auto;
+  overflow-x: auto;
+  border-radius: var(--radius);
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 64px repeat(7, minmax(150px, 1fr));
+  gap: 3px;
+  background: var(--border);
+  font-size: 0.75rem;
+  position: relative;
+  min-width: 900px;
+}
+
+.schedule-day-header {
+  background: var(--surface);
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.schedule-day-header.is-today {
+  color: var(--accent);
+}
+
+.schedule-hour-label {
+  background: var(--surface);
+  padding-right: 0.55rem;
+  text-align: right;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.schedule-day-column {
+  background: var(--bg);
+  position: relative;
+}
+
+.schedule-day-column.is-today {
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg));
+}
+
+.schedule-day-column.drop-target {
+  background: var(--accent-soft);
+}
+
+/* A live line + time label across today's column at the current time --
+   schedule.js's updateNowLine() positions and updates it. */
+.schedule-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px solid var(--danger);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.schedule-now-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.schedule-now-line-label {
+  position: absolute;
+  left: 6px;
+  top: -1.35em;
+  font-size: 0.65rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: var(--danger);
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.schedule-block {
+  /* background/color set per-block in JS (schedule.js's colorForShow()) --
+     each show gets a stable color from a validated categorical palette. */
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: stretch;
+  transition: box-shadow 0.12s ease;
+}
+
+.schedule-block:hover {
+  box-shadow: var(--shadow-md);
+  z-index: 5;
+}
+
+.schedule-block.dragging {
+  opacity: 0.85;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+}
+
+.schedule-block-handle {
+  /* currentColor-based (not a fixed white tint) so it reads correctly
+     whether this block's text is white or dark -- see colorForShow(). */
+  flex: 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  letter-spacing: -1px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.schedule-block-handle:active {
+  cursor: grabbing;
+}
+
+.schedule-block-handle:hover {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.schedule-block-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.schedule-block-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-block-time {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.schedule-block-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  cursor: ns-resize;
+}
+
+.schedule-block-resize::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.schedule-block:hover .schedule-block-resize::after {
+  opacity: 0.5;
+}
+
+.schedule-block-readiness {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+}
+
+.schedule-popover {
+  position: fixed;
+  width: 250px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  z-index: 100;
+}
+
+/* Author rules that set `display` on an element beat the browser's own
+   default `[hidden] { display: none }` (author origin always wins over UA
+   origin, regardless of specificity) -- without this, the popover/toast
+   render as an empty box even while `hidden` is set. */
+.schedule-popover[hidden], .schedule-toast[hidden] {
+  display: none;
+}
+
+.schedule-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.schedule-popover-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--muted);
+  padding: 0;
+}
+
+.schedule-popover-close:hover {
+  color: var(--text);
+}
+
+.schedule-popover .form-actions {
+  margin-top: 0.1rem;
+}
+
+.schedule-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: 340px;
+  background: var(--danger-bg);
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  font-size: 0.8rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+}
+
+#personas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.persona-row {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
+}
+
+.persona-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+}
+
+.persona-row-header .voice-file {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

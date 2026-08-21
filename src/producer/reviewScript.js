@@ -14,11 +14,11 @@
 // corrupt the script-format.md grammar the way a raw-markdown rewrite could.
 import fs from 'node:fs';
 import path from 'node:path';
-import { config } from '../config/index.js';
 import { complete } from '../llm/client.js';
 import { parseArgs } from '../lib/args.js';
 import { PARALINGUISTIC_INSTRUCTION } from '../llm/prompts.js';
 import { parseScript, renderScript } from '../script/format.js';
+import { loadPersonas, loadScriptReview } from '../scheduler/promptsUtil.js';
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are the final script editor for a radio show, reviewing the complete assembled script in one pass. " +
@@ -76,7 +76,7 @@ export async function reviewScript({ segments, record }) {
   if (djIndexes.length === 0) return segments;
 
   const djSegments = djIndexes.map((i) => ({ index: i, persona: segments[i].persona, body: segments[i].body }));
-  const systemPrompt = config.scriptReview?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+  const systemPrompt = loadScriptReview()?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
   const messages = [
     {
       role: 'system',
@@ -124,7 +124,7 @@ async function main() {
   }
   const filePath = path.resolve(args.file);
   const markdown = fs.readFileSync(filePath, 'utf8');
-  const parsed = parseScript(markdown, { personas: config.personas });
+  const parsed = parseScript(markdown, { personas: loadPersonas() });
   if (!parsed.segments) {
     console.error('Script failed to parse -- fix these issues first:');
     for (const issue of parsed.issues) console.error(`  - ${issue}`);

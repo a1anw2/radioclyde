@@ -28,6 +28,7 @@ import { createLogger } from '../lib/logger.js';
 import { parseArgs } from '../lib/args.js';
 import { toLocalISOString } from '../lib/time.js';
 import * as scheduleUtil from '../scheduler/scheduleUtil.js';
+import { loadPersonas, loadScriptReview } from '../scheduler/promptsUtil.js';
 import { parseScript, renderScript } from '../script/format.js';
 import { recordPlayed } from './history.js';
 import { parseShowBrief } from './showBrief.js';
@@ -101,7 +102,7 @@ async function runProducerPipeline({ id, descriptionText, durationMinutes, date 
   log(`[${id}] Phase D done: ${segments.length} segments assembled.`);
 
   let reviewedSegments = segments;
-  if (config.scriptReview?.enabled !== false) {
+  if (loadScriptReview()?.enabled !== false) {
     log(`[${id}] Phase E: reviewing script for cross-segment repetition...`);
     debug.review = [];
     reviewedSegments = await reviewScript({ segments, record: debug.review });
@@ -114,7 +115,7 @@ async function runProducerPipeline({ id, descriptionText, durationMinutes, date 
   const markdown = renderScript({ title, durationMinutes, segments: reviewedSegments });
   const validation = parseScript(markdown, {
     requiredDurationMinutes: durationMinutes,
-    personas: config.personas,
+    personas: loadPersonas(),
     knownRatingKeys,
   });
   debug.validation = validation.ok

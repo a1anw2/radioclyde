@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-// The single coordinating daemon: one long-running process (run under
-// systemd) that owns every timing decision for the station. Each job is a
-// plain exported async function living in its own module -- so each stays
-// independently testable/dry-runnable -- wired here to its own interval.
-// A crash inside any one job's tick is caught and logged without touching
-// the others; heavy/slow work (LLM calls, TTS synthesis) still runs
-// serialized via lib/concurrency.js's runSerialized, never overlapping.
-import fs from 'node:fs';
-import path from 'node:path';
+// The scheduling half of the station: owns every timing decision. Each job
+// is a plain exported async function living in its own module -- so each
+// stays independently testable/dry-runnable -- wired here to its own
+// interval. A crash inside any one job's tick is caught and logged without
+// touching the others; heavy/slow work (LLM calls, TTS synthesis) still
+// runs serialized via lib/concurrency.js's runSerialized, never overlapping.
+//
+// startScheduler() is called once, from src/server/index.js's startup, in
+// the same process as the Fastify web/studio server -- there is no longer a
+// separate radioclyde-scheduler process. Kept independently runnable below
+// (`node src/scheduler/scheduler.js`) for local debugging.
 import { config } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import * as scheduleUtil from './scheduleUtil.js';
@@ -55,15 +57,12 @@ function logStartupStatus() {
 
   log(`Startup: ${occurrences.length} show occurrence(s) scheduled in the next ${horizonMinutes}min:`);
   for (const { show, weekday, date, timeKey, minutesUntil } of occurrences) {
-    const showDateDir = scheduleUtil.dateDir(weekday, show.id, date);
-    const showOccurrenceDir = scheduleUtil.occurrenceDir(weekday, show.id, date, timeKey);
-    const scriptReady = fs.existsSync(path.join(showDateDir, 'script.md'));
-    const directed = fs.existsSync(path.join(showOccurrenceDir, 'playlist.m3u'));
+    const readiness = scheduleUtil.occurrenceReadiness(weekday, show.id, date, timeKey);
 
     let status;
-    if (directed) {
+    if (readiness === 'directed') {
       status = 'directed -- ready to air';
-    } else if (scriptReady) {
+    } else if (readiness === 'script') {
       status =
         minutesUntil <= (config.schedule.directLeadTimeMinutes ?? 15)
           ? 'script ready -- direct/audio job should pick it up this tick'
@@ -78,22 +77,39 @@ function logStartupStatus() {
   }
 }
 
-log('Scheduler starting...');
-logStartupStatus();
+// try/catch here matters more than for a typical exported function: this is
+// called from src/server/index.js's startup, in the same process as the
+// public site/stream/studio -- a startup-time throw here (e.g. a malformed
+// station.json) must not be allowed to take Fastify's own listen() down with
+// it. Job-tick errors are already isolated by every()'s own try/catch; this
+// guards logStartupStatus()/rebuildIncompleteOccurrences(), which run before
+// any job registration.
+export function startScheduler() {
+  log('Scheduler starting...');
+  try {
+    logStartupStatus();
+  } catch (err) {
+    log(`Startup status ERROR: ${err.stack || err.message}`);
+  }
 
-// Fire-and-forget, same as every()'s own immediate tick() below: it chains
-// onto the same runSerialized tail as the scripts/direct jobs (so it never
-// overlaps their TTS/LLM work), but startup itself doesn't block on it.
-rebuildIncompleteOccurrences().catch((err) => log(`Startup rebuild-check ERROR: ${err.stack || err.message}`));
+  // Fire-and-forget, same as every()'s own immediate tick() below: it chains
+  // onto the same runSerialized tail as the scripts/direct jobs (so it never
+  // overlaps their TTS/LLM work), but startup itself doesn't block on it.
+  rebuildIncompleteOccurrences().catch((err) => log(`Startup rebuild-check ERROR: ${err.stack || err.message}`));
 
-every(config.schedule.scheduleWatchIntervalMinutes ?? 1, 'schedule_watch', checkScheduleChanged);
-every(config.schedule.scriptCheckIntervalMinutes, 'schedule_scripts', checkAndTriggerScripts);
-every(config.schedule.directCheckIntervalMinutes, 'schedule_direct', checkAndTriggerDirect);
-every(config.schedule.prewarmCheckIntervalMinutes ?? config.schedule.scriptCheckIntervalMinutes, 'schedule_prewarm', checkAndTriggerPrewarmAudio);
-every(config.schedule.nowPlayingCheckIntervalMinutes, 'now_playing', updateNowPlaying);
-every(config.filler.regenerateIntervalMinutes, 'filler', generateFillerPlaylist);
-every(config.cleanup.intervalMinutes, 'cleanup', cleanupOldShows);
-every(config.backup.intervalMinutes, 'backup', backupStation);
-every(config.chatterbox.restartIntervalMinutes ?? 1440, 'chatterbox_restart', restartChatterbox);
+  every(config.schedule.scheduleWatchIntervalMinutes ?? 1, 'schedule_watch', checkScheduleChanged);
+  every(config.schedule.scriptCheckIntervalMinutes, 'schedule_scripts', checkAndTriggerScripts);
+  every(config.schedule.directCheckIntervalMinutes, 'schedule_direct', checkAndTriggerDirect);
+  every(config.schedule.prewarmCheckIntervalMinutes ?? config.schedule.scriptCheckIntervalMinutes, 'schedule_prewarm', checkAndTriggerPrewarmAudio);
+  every(config.schedule.nowPlayingCheckIntervalMinutes, 'now_playing', updateNowPlaying);
+  every(config.filler.regenerateIntervalMinutes, 'filler', generateFillerPlaylist);
+  every(config.cleanup.intervalMinutes, 'cleanup', cleanupOldShows);
+  every(config.backup.intervalMinutes, 'backup', backupStation);
+  every(config.chatterbox.restartIntervalMinutes ?? 1440, 'chatterbox_restart', restartChatterbox);
 
-log('Scheduler started.');
+  log('Scheduler started.');
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startScheduler();
+}

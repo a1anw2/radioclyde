@@ -95,6 +95,19 @@ export function occurrenceDir(weekday, showId, date, time) {
   return path.join(dateDir(weekday, showId, date), time);
 }
 
+// Where a real occurrence (a specific weekday/showId/date/time, not just the
+// weekly template slot) actually stands: 'directed' once playlist.m3u exists
+// (director/index.js writes it last, so its presence alone means ready to
+// air), 'script' once script.md exists but it isn't directed yet, 'none'
+// before either exists. Same two fs.existsSync checks scheduler.js's
+// logStartupStatus() used inline before this was pulled out, now also used
+// by the studio schedule API to show readiness on the grid.
+export function occurrenceReadiness(weekday, showId, date, time) {
+  if (fs.existsSync(path.join(occurrenceDir(weekday, showId, date, time), 'playlist.m3u'))) return 'directed';
+  if (fs.existsSync(path.join(dateDir(weekday, showId, date), 'script.md'))) return 'script';
+  return 'none';
+}
+
 export function timeToMinutes(startTime) {
   const [h, m] = startTime.split(':').map(Number);
   return h * 60 + m;

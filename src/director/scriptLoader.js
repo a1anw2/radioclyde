@@ -5,8 +5,8 @@
 // validated parse of a show/date's script.md before doing anything with it.
 import fs from 'node:fs';
 import path from 'node:path';
-import { config } from '../config/index.js';
 import * as scheduleUtil from '../scheduler/scheduleUtil.js';
+import { loadPersonas } from '../scheduler/promptsUtil.js';
 import { parseScript } from '../script/format.js';
 import { getTrackByRatingKey } from '../plex/tracks.js';
 
@@ -24,7 +24,7 @@ export async function loadValidatedScript({ id, weekday, date }) {
     knownRatingKeys.set(ratingKey, await getTrackByRatingKey(ratingKey));
   }
 
-  const parsed = parseScript(markdown, { personas: config.personas, knownRatingKeys });
+  const parsed = parseScript(markdown, { personas: loadPersonas(), knownRatingKeys });
   if (!parsed.ok) {
     throw new Error(`script.md at ${scriptPath} failed validation: ${parsed.issues.join(' | ')}`);
   }

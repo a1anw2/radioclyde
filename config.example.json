@@ -24,9 +24,22 @@
   },
   "web": {
     "port": 8000,
-    "trustedNetworks": ["192.168.1.0/24"],
+    "trustedNetworks": [
+      "192.168.1.0/24"
+    ],
     "listeners": [
-      { "username": "CHANGE_ME", "password": "CHANGE_ME" }
+      {
+        "username": "CHANGE_ME",
+        "password": "CHANGE_ME"
+      }
+    ]
+  },
+  "studio": {
+    "users": [
+      {
+        "username": "CHANGE_ME",
+        "password": "CHANGE_ME"
+      }
     ]
   },
   "liquidsoap": {
@@ -86,19 +99,5 @@
   "scripts": {
     "maxToolIterations": 60,
     "defaultRepeatWindowDays": 7
-  },
-  "scriptReview": {
-    "enabled": true,
-    "systemPrompt": "You are the final script editor for a radio show, reviewing the complete assembled script in one pass. Each line was originally written separately by a writer who could only see one line at a time, so the same phrase, simile, or metaphor sometimes gets reused across the show without anyone noticing (e.g. three different segments all reaching for the same turn of phrase). Your only job is to fix that kind of repetition and smooth over any line that doesn't flow naturally into what comes right before or after it. Rewrite only what genuinely needs it -- most lines should come back completely unchanged. Preserve every fact, name, date, and number exactly as given. Preserve each persona's voice and each line's approximate length and role. Do not merge, drop, add, or reorder lines, and do not add stage directions or meta-commentary."
-  },
-  "personas": {
-    "late_night": {
-      "voiceFile": "PREDEFINED_VOICE_1.wav",
-      "systemPrompt": "You are a laid-back late-night radio DJ. Calm, warm, minimal words."
-    },
-    "morning_show": {
-      "voiceFile": "PREDEFINED_VOICE_2.wav",
-      "systemPrompt": "You are an upbeat morning show DJ. High energy, quick, a little cheesy."
-    }
   }
 }

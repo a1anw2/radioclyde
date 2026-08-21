@@ -1,16 +1,18 @@
 # Adding a new DJ persona
 
-A "DJ" is just a `config.json` `personas` entry (a voice + a system prompt)
-plus a couple of optional cosmetic assets. There's no code to write or
-build step to run -- every place that reads personas keys off
-`config.personas` at runtime, so a new entry is picked up immediately on the
-next scheduler restart.
+A "DJ" is just a `dataDir/prompts.json` `personas` entry (a voice + a system
+prompt) plus a couple of optional cosmetic assets. No code to write or build
+step to run -- every place that reads personas goes through
+`src/scheduler/promptsUtil.js`'s `loadPersonas()`, which re-reads
+`prompts.json` fresh on every call, so a new entry is picked up immediately,
+no restart needed. Easiest done through the studio admin's Prompts page
+(`/studio`); the steps below are for hand-editing the file directly.
 
 ## 1. Get the reference voice clip onto the Chatterbox server
 
 Chatterbox does the actual voice cloning from a reference `.wav`, and it
 does so entirely on its own side -- **this repo never touches that file**.
-`config.json`'s `voiceFile` is sent to Chatterbox as an opaque
+`prompts.json`'s `voiceFile` is sent to Chatterbox as an opaque
 `predefined_voice_id` string (`src/director/tts.js`'s `requestSynthesis`);
 nothing here reads, uploads, or resolves it against a local path.
 
@@ -29,9 +31,11 @@ persona ever speaks, and no `cfg_weight`/`exaggeration` tuning
 
 Lowercase, single word, `^[a-z0-9_-]+$` (this exact pattern is enforced by
 `src/server/djPhotoProxy.js` for the photo route, and matches every existing
-key in `config.json`'s `personas`). e.g. `marcus`.
+key in `prompts.json`'s `personas`). e.g. `marcus`.
 
-## 3. Add the persona to `config.json`
+## 3. Add the persona to `dataDir/prompts.json`
+
+Through the studio admin (`/studio` → Prompts) or by hand:
 
 ```json
 "personas": {
@@ -49,10 +53,11 @@ key in `config.json`'s `personas`). e.g. `marcus`.
   lines get drafted (`src/producer/moves.js`, `src/director/liveSegments.js`
   for live weather/time call-ins).
 
-This is the only edit required for the persona to *exist*. `config.example.json`
-should get the same entry (with a placeholder `voiceFile`) so the example
-stays a truthful template, but only `config.json` is actually loaded at
-runtime.
+This is the only edit required for the persona to *exist*. `prompts.json`
+lives under `dataDir`, outside the repo (same as `station.json`) -- there's
+no `config.example.json`-style template for it since it's real station data,
+not operational config; a fresh deploy seeds it from scratch (or copies an
+existing one, e.g. from [sample-data/](../sample-data/) if provided).
 
 ## 4. Optional: photo
 
@@ -84,7 +89,7 @@ listed on this line.
   writes `script.md` to disk either way) -- the mistake instead surfaces
   later, as a hard throw from `src/director/djAudio.js` ("Unknown persona
   ... no voiceFile in config.js") when directing tries to synthesize that
-  segment. Double-check the id matches `config.json` exactly before a show
+  segment. Double-check the id matches `prompts.json` exactly before a show
   airs on it, don't rely on script generation to catch it.
 - **No dry-run tool exists yet for "just synthesize one line and listen."**
   The closest thing is `node src/cli/prewarmShowAudio.js --id=<showId>`,

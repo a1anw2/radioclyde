@@ -68,6 +68,11 @@ phases hand off through.
   whole next day's scripts and DJ audio get produced ahead of time.
 - **Web now-playing page + JSON API**: now playing, recently played
   history, and upcoming shows, plus an authenticated stream proxy.
+- **Password-protected studio admin**: a separate `/studio` section of the
+  same web app (its own Basic Auth realm) for creating, editing, and
+  scheduling shows through a browser, editing DJ persona/script-review
+  prompts, and an On Air dashboard (current track, listener count, upcoming,
+  history) with Skip and Force Next Show controls.
 - **Native Android TV / Google TV app**: a Leanback client for the same API
   (now-playing card, live clock/weather, playback controls, history).
 - **Native Android phone/tablet app**: a touch client for the same API, with
@@ -76,8 +81,9 @@ phases hand off through.
   out and about.
 - **Plex scrobbling**: actual airplay updates Plex's own play count/history,
   gated on real listener count so airtime to nobody doesn't inflate it.
-- **Production-ready as a systemd service**: unit files for the scheduler
-  daemon and the web server.
+- **Production-ready as a systemd service**: one unit
+  (`radioclyde.service`) runs the web server, studio admin, and scheduling
+  daemon together in a single process.
 
 ## Meet the DJs
 
@@ -133,7 +139,7 @@ now-playing page and the Google TV app.
 | **Chatterbox** | Text-to-speech engine: synthesizes each persona's DJ audio |
 | **Liquidsoap** | Playout engine: plays the directed playlist or falls back to filler, feeds Icecast |
 | **Icecast** | The actual stream server listeners connect to |
-| **Fastify** | Web server: now-playing page, JSON API, authenticated stream proxy |
+| **Fastify** | Web server: now-playing page, JSON API, authenticated stream proxy, password-protected studio admin, and the scheduling daemon (one merged process) |
 | **Android TV / Google TV app** (`android-tv/`) | Native Java/Leanback client, independent Gradle project |
 | **Android mobile app** (`android-mobile/`) | Native Java/Material phone-tablet client, independent Gradle project |
 
@@ -141,14 +147,18 @@ now-playing page and the Google TV app.
 
 1. `npm install`
 2. Copy `config.example.json` to `config.json` and fill in real values
-   (Plex token, Icecast credentials, LM Studio/Chatterbox URLs, personas,
-   etc.). `config.json` is gitignored since it holds secrets.
+   (Plex token, Icecast credentials, LM Studio/Chatterbox URLs, studio admin
+   credentials, etc.). `config.json` is gitignored since it holds secrets.
 3. Point `dataDir` in `config.json` at wherever `station.json`,
    `show-descriptions/*.md`, and all generated output should live. This is
    deliberately kept outside the repo. See [sample-data/](sample-data/) for a
-   working example to copy as a starting point.
-4. Run the scheduler (`npm run runstation`, or install
-   `radioclyde-scheduler.service` via systemd for production).
+   working example to copy as a starting point. Persona voices/system
+   prompts and the script-review prompt live in `prompts.json` under
+   `dataDir` (see [docs/adding-a-dj.md](docs/adding-a-dj.md)), editable
+   either by hand or through the studio admin's Prompts page.
+4. Run everything (web server, studio admin, and scheduler together) with
+   `npm run runweb`, or install `radioclyde.service` via systemd for
+   production.
 
 ## Writing a show's Track Selection brief
 
@@ -206,13 +216,17 @@ brief in, tracklist out).
 
 Pipeline (normally only invoked by the scheduler, not by hand):
 
-- `npm run runstation`: the long-running daemon; owns every timing decision.
+- `npm run runweb`: the whole station -- web server (now-playing page,
+  JSON API, stream proxy, studio admin) and the scheduling daemon, together
+  in one process. This is what `radioclyde.service` runs in production.
+- `npm run runstation`: the scheduling daemon alone (`src/scheduler/scheduler.js`
+  is still independently runnable), for local debugging without the web
+  server.
 - `npm run generate-script -- --id=<showId>`: runs the producer for one show.
 - `npm run direct-show -- --id=<showId> --weekday=<weekday> --date=<yyyy-mm-dd> --time=<HH:MM>`: runs the director for one occurrence.
 - `npm run prewarm-show-audio -- --id=<showId> [--weekday=<weekday> --date=<yyyy-mm-dd>]`: warms a show's dj-audio cache ahead of time (the downtime job's own per-show step).
 - `npm run update-now-playing`: points `now_playing.m3u` at whatever should be airing.
 - `npm run generate-filler-playlist`: rewrites the off-air filler pool.
-- `npm run runweb`: the web server (now-playing page, JSON API, stream proxy).
 
 Preview/dry-run tools, for iterating on a show while designing it (no
 station.json entry required):

@@ -10,10 +10,11 @@ import path from 'node:path';
 import { config } from '../config/index.js';
 import { withLock } from '../lib/lock.js';
 import { applyGain } from '../lib/audio.js';
+import { loadPersonas } from '../scheduler/promptsUtil.js';
 import { synthesizeVoice } from './tts.js';
 
 export async function synthesizeSpeechToPath(persona, text, filePath) {
-  const voiceFile = config.personas[persona]?.voiceFile;
+  const voiceFile = loadPersonas()[persona]?.voiceFile;
   if (!voiceFile) throw new Error(`Unknown persona "${persona}" -- no voiceFile in config.`);
   const startedAt = Date.now();
   const audio = await withLock(config.paths.chatterboxLockPath, () => synthesizeVoice(text, voiceFile));

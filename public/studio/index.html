@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Studio</title>
+  <link rel="stylesheet" href="/studio/style.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="sidebar">
+      <div class="brand">RADIOCLYDE<br><span>STUDIO</span></div>
+      <ul class="nav-list">
+        <li><a href="#on-air" data-view="on-air">On Air</a></li>
+        <li><a href="#shows" data-view="shows">Shows</a></li>
+        <li><a href="#schedule" data-view="schedule">Schedule</a></li>
+        <li><a href="#prompts" data-view="prompts">Prompts</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <section id="view-on-air" class="view">
+        <h1>On Air</h1>
+        <div class="card on-air-card">
+          <div class="on-air-status">
+            <span id="status-dot" class="status-dot status-idle"></span>
+            <span id="status-label">Loading...</span>
+            <span id="listener-count" class="listener-count"></span>
+          </div>
+          <div class="on-air-main">
+            <img id="on-air-art" class="on-air-art" alt="" hidden>
+            <div class="on-air-info">
+              <p id="on-air-show" class="on-air-show"></p>
+              <p id="on-air-title" class="on-air-title"></p>
+              <p id="on-air-artist" class="on-air-artist"></p>
+              <div id="on-air-progress" class="on-air-progress" hidden>
+                <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+                <div class="progress-times">
+                  <span id="progress-elapsed">0:00</span>
+                  <span id="progress-duration">0:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="on-air-actions">
+            <button id="skip-button" type="button" class="btn" disabled>Skip</button>
+            <button id="force-next-button" type="button" class="btn btn-primary">Force Next Show</button>
+            <span id="on-air-action-message" class="action-message"></span>
+          </div>
+        </div>
+
+        <div class="columns">
+          <div class="card">
+            <h2>Upcoming</h2>
+            <ul id="upcoming-list" class="data-list"></ul>
+          </div>
+          <div class="card">
+            <h2>Recently played</h2>
+            <ul id="history-list" class="data-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-shows" class="view" hidden>
+        <div id="shows-list-view">
+          <h1>Shows</h1>
+          <div class="toolbar">
+            <input id="shows-search" type="search" placeholder="Search shows...">
+            <button id="new-show-button" type="button" class="btn btn-primary">New Show</button>
+          </div>
+          <div class="card">
+            <table class="data-table">
+              <thead>
+                <tr><th>Title</th><th>Id</th><th>Personas</th><th>Segments</th><th>Duration</th></tr>
+              </thead>
+              <tbody id="shows-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="show-editor-view" hidden>
+          <button id="back-to-shows-button" type="button" class="back-button">&larr; Back to Shows</button>
+          <h1 id="show-editor-title">Edit show</h1>
+          <div class="card show-editor">
+            <form id="show-editor-form">
+              <label>Id (slug)<input id="field-id" name="id" pattern="[a-zA-Z0-9_-]+" required></label>
+              <label>Title<input id="field-title" name="title" required></label>
+              <label>Duration (minutes, documentation only)<input id="field-duration" name="durationMinutes" type="number" min="1"></label>
+              <label>Personas (comma-separated, first is primary host)<input id="field-personas" name="personas" required></label>
+              <label class="checkbox-row">
+                <span>Segments</span>
+                <span><label><input type="checkbox" id="field-segment-quiz" value="quiz"> Quiz</label>
+                <label><input type="checkbox" id="field-segment-weather" value="weather"> Weather</label></span>
+              </label>
+              <label>Repeat window (days, optional)<input id="field-repeat" name="repeatWindowDays" type="number" min="1"></label>
+              <label>Description<textarea id="field-description" rows="3"></textarea></label>
+              <label>Hosts<textarea id="field-hosts" rows="3"></textarea></label>
+              <label>Track Selection<textarea id="field-trackSelection" rows="6" required></textarea></label>
+              <label>Tone<textarea id="field-tone" rows="3"></textarea></label>
+              <label>Track moves<textarea id="field-trackMoves" rows="3"></textarea></label>
+              <label>Quiz<textarea id="field-quiz" rows="3"></textarea></label>
+              <label>Weather<textarea id="field-weather" rows="3"></textarea></label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" id="delete-show-button" class="btn btn-danger">Delete</button>
+                <span id="show-editor-message" class="action-message"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-schedule" class="view" hidden>
+        <h1>Schedule</h1>
+        <p class="view-hint">Drag the &#8942;&#8942; handle to move a show &mdash; drop it on another to swap them, or into empty space to move it there (the gap it leaves closes up). Drag its bottom edge to resize. Click a show's name to reassign or delete it, click empty space to add one.</p>
+        <div class="card">
+          <div class="schedule-scroll" id="schedule-scroll">
+            <div id="schedule-grid" class="schedule-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <div id="schedule-popover" class="schedule-popover" hidden></div>
+      <div id="schedule-toast" class="schedule-toast" hidden></div>
+
+      <section id="view-prompts" class="view" hidden>
+        <h1>Prompts</h1>
+        <div class="card">
+          <h2>Script review</h2>
+          <textarea id="script-review-prompt" rows="5"></textarea>
+          <div class="form-actions">
+            <button id="save-script-review" type="button" class="btn btn-primary">Save</button>
+            <span id="script-review-message" class="action-message"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Personas</h2>
+          <div id="personas-list"></div>
+          <div class="form-actions">
+            <button id="save-personas" type="button" class="btn btn-primary">Save all personas</button>
+            <span id="personas-message" class="action-message"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/studio/js/app.js"></script>
+</body>
+</html>

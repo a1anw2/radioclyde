@@ -18,9 +18,9 @@ export function capitalizePersonaList(djField) {
 // Shared by nowPlaying.js and upcoming.js -- a schedule entry's display name
 // isn't a field on the entry itself, it's the H1 heading inside the show's
 // markdown brief (parseShowBrief already parses exactly that, stripping a
-// leading emoji). primaryPersona is the show's host -- config.personas keys
-// (and every persona reference through the producer/director/script
-// pipeline, confirmed live in transcript.json) are lowercase ids like
+// leading emoji). primaryPersona is the show's host -- prompts.json's
+// personas keys (and every persona reference through the producer/director/
+// script pipeline, confirmed live in transcript.json) are lowercase ids like
 // "connor", so it's capitalized here for display only; nothing internal
 // should ever match against this capitalized form.
 export function resolveShowInfo(showEntry, fallbackId) {

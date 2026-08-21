@@ -1,6 +1,7 @@
 import { config } from '../config/index.js';
 import { complete } from '../llm/client.js';
 import { PARALINGUISTIC_INSTRUCTION, TIME_OF_DAY_INSTRUCTION } from '../llm/prompts.js';
+import { loadPersonas } from '../scheduler/promptsUtil.js';
 import { fetchCurrentWeather, describeWeatherCode, currentLocalTimeString, currentLocalDateString } from './weather.js';
 
 // Real data first (deterministic fetch, or the server clock for time --
@@ -18,7 +19,7 @@ export async function resolveLiveLine({ persona, kind, brief }) {
     );
   }
 
-  const personaPrompt = config.personas[persona]?.systemPrompt ?? `You are ${persona}, a radio DJ.`;
+  const personaPrompt = loadPersonas()[persona]?.systemPrompt ?? `You are ${persona}, a radio DJ.`;
   const messages = [
     {
       role: 'system',

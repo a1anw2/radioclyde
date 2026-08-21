@@ -53,7 +53,11 @@ export function parseShowBrief(descriptionText, { defaultRepeatWindowDays } = {}
 // producer/trackSelection/query.js resolves into a concrete Plex query.
 // Everything else in the section stays free text; only its boundaries (this
 // heading to the next "## " heading, or end of file) are parsed mechanically.
-function extractSection(descriptionText, name) {
+// Exported for showBriefWriter.js's editing-round-trip reader, which needs
+// the sections this module doesn't otherwise extract (Hosts/Tone/Track
+// moves/Quiz/Weather) -- those aren't mechanically consumed by the producer
+// pipeline itself, only by the studio admin's editor.
+export function extractSection(descriptionText, name) {
   const lines = descriptionText.replace(/\r\n/g, '\n').split('\n');
   const startIdx = lines.findIndex((l) => new RegExp(`^##\\s+${name}\\s*$`, 'i').test(l.trim()));
   if (startIdx === -1) return null;

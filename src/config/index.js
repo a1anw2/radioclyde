@@ -40,4 +40,12 @@ config.paths = {
   nowPlayingTrackPath: path.join(config.dataDir, 'now_playing_track.json'),
   airedHistoryFile: path.join(config.dataDir, 'history', 'aired.jsonl'),
   artCacheDir: path.join(config.dataDir, 'cache', 'art'),
+  // Persona system prompts + the script-review system prompt, split out of
+  // this boot-time-loaded config.json into their own file so studio admin
+  // edits take effect without a process restart -- see promptsUtil.js,
+  // which re-reads this fresh on every call, the same no-caching pattern
+  // scheduleUtil.js already uses for station.json.
+  promptsFile: path.join(config.dataDir, 'prompts.json'),
+  promptsLockPath: path.join(config.dataDir, '.prompts.lock'),
+  stationLockPath: path.join(config.dataDir, '.station.lock'),
 };
