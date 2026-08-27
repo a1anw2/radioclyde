@@ -101,6 +101,13 @@ export function startScheduler() {
   every(config.schedule.scriptCheckIntervalMinutes, 'schedule_scripts', checkAndTriggerScripts);
   every(config.schedule.directCheckIntervalMinutes, 'schedule_direct', checkAndTriggerDirect);
   every(config.schedule.prewarmCheckIntervalMinutes ?? config.schedule.scriptCheckIntervalMinutes, 'schedule_prewarm', checkAndTriggerPrewarmAudio);
+  // Kept far tighter than the other jobs' intervals -- this is the one that
+  // gates on-air continuity: show_source's playlist (radio.liq) empties out
+  // the instant a show's real audio ends, and fallback() drops to filler
+  // immediately, so whatever gap exists between that moment and this job
+  // noticing and rewriting now_playing.m3u is audible dead-air-filler on
+  // every single transition (listener report, 2026-08-27). The job itself is
+  // cheap (a couple of small local file reads), so polling this often is fine.
   every(config.schedule.nowPlayingCheckIntervalMinutes, 'now_playing', updateNowPlaying);
   every(config.filler.regenerateIntervalMinutes, 'filler', generateFillerPlaylist);
   every(config.cleanup.intervalMinutes, 'cleanup', cleanupOldShows);
