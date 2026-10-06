@@ -28,17 +28,20 @@ export function registerStudioOnAirApi(fastify) {
     };
   });
 
-  // Only meaningful while a track (not DJ speech) is airing -- the studio UI
-  // is expected to disable this button otherwise, so it can't cut a DJ off
-  // mid-sentence, but the check is enforced here too since a stale/raced UI
-  // state shouldn't be trusted alone.
+  // Skip whatever is actually on the Icecast output (`/stream.skip`), not
+  // `show_source.skip`. show_source is the scheduled-show playlist; when
+  // fallback() has dropped to filler (or fade.in is the operator actually
+  // decoding), skipping the inner playlist does not cut the song the
+  // listener hears. Confirmed live against this Liquidsoap build's `help`.
+  // The studio UI disables this during DJ speech; the no-track check here
+  // is the same guard for a stale/raced click.
   fastify.post('/api/on-air/skip', async (request, reply) => {
     const { track } = composeNowPlaying();
     if (!track) {
       return reply.code(409).send({ error: 'Nothing skippable right now (no track currently airing).' });
     }
     try {
-      const result = await sendCommand('show_source.skip');
+      const result = await sendCommand('/stream.skip');
       return { result };
     } catch (err) {
       return reply.code(502).send({ error: `Liquidsoap telnet command failed: ${err.message}` });
@@ -46,11 +49,27 @@ export function registerStudioOnAirApi(fastify) {
   });
 
   fastify.post('/api/on-air/force-next', async (request, reply) => {
+    let state;
     try {
-      const state = await forceNextOccurrence();
-      return { state };
+      state = await forceNextOccurrence();
     } catch (err) {
-      return reply.code(500).send({ error: err.message });
+      const code = /not been produced/.test(err.message) ? 409 : 500;
+      return reply.code(code).send({ error: err.message });
     }
+    // Playlist watch-reload only drops not-yet-started entries -- without
+    // an explicit reload + output skip, the current file plays out and
+    // the button looks like a no-op.
+    try {
+      await sendCommand('show_source.reload');
+    } catch {
+      // watch mode may still pick the rewrite up; the skip below is the
+      // part that actually interrupts.
+    }
+    try {
+      await sendCommand('/stream.skip');
+    } catch (err) {
+      return reply.code(502).send({ error: `Liquidsoap telnet command failed: ${err.message}` });
+    }
+    return { state };
   });
 }

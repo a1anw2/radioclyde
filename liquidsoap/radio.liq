@@ -19,11 +19,13 @@ let json.parse (config : {
 }) = file.contents("/home/ai/radioclyde/config.json")
 
 # Loopback-only, matching src/server/auth.js's trust model -- the studio
-# admin's Skip control (src/liquidsoap/telnetClient.js) is the only client,
-# running on this same box. show_source below gets an explicit id so it's
-# addressable as "show_source.skip" -- verify that command against the real
-# running build (`telnet 127.0.0.1 <port>` + `help`) before relying on it,
-# per this file's own fade.out()/crossfade() history below.
+# admin's Skip / Force Next controls (src/liquidsoap/telnetClient.js) are
+# the only client, running on this same box. Skip uses `/stream.skip` (the
+# Icecast output -- whatever is actually decoding, show or filler), not
+# show_source.skip: skipping the inner playlist is a no-op while fallback()
+# is on filler, and does not interrupt fade.in's currently-decoding file.
+# show_source still gets an explicit id so Force Next can `show_source.reload`
+# the rewritten now_playing.m3u. Verified against this build's `help`.
 settings.server.telnet.set(true)
 settings.server.telnet.bind_addr.set(config.liquidsoap.telnetHost)
 settings.server.telnet.port.set(config.liquidsoap.telnetPort)

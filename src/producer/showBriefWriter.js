@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../config/index.js';
-import { loadSchedule } from '../scheduler/scheduleUtil.js';
+import { removeShowOccurrences } from '../scheduler/stationWriter.js';
 import { parseShowBrief, extractSection } from './showBrief.js';
 
 // Show ids only ever come from station.json's own slugs (e.g. "80s-rock"),
@@ -123,27 +123,15 @@ export function updateShowBrief(id, fields) {
   return { id };
 }
 
-// Refuses to delete a show still referenced anywhere in station.json's
-// schedule, so a delete can't silently orphan a scheduled occurrence --
-// returns which weekday/time reference it instead of deleting.
-export function deleteShowBrief(id) {
+// Unschedules every occurrence of this show first, then deletes the
+// brief -- a studio delete must not leave orphaned station.json slots.
+export async function deleteShowBrief(id) {
   assertValidId(id);
-  const schedule = loadSchedule();
-  const references = [];
-  for (const [weekday, occurrences] of Object.entries(schedule)) {
-    for (const occ of occurrences) {
-      if (occ.id === id) references.push({ weekday, startTime: occ.startTime });
-    }
-  }
-  if (references.length > 0) {
-    const err = new Error(`Show "${id}" is still scheduled (${references.map((r) => `${r.weekday} ${r.startTime}`).join(', ')}) -- remove it from the schedule first.`);
-    err.references = references;
-    throw err;
-  }
   const target = briefPath(id);
   if (!fs.existsSync(target)) {
     throw new Error(`No show "${id}" found.`);
   }
+  const removedFromSchedule = await removeShowOccurrences(id);
   fs.unlinkSync(target);
-  return { id };
+  return { id, removedFromSchedule };
 }

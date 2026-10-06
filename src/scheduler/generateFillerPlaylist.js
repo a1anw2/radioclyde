@@ -10,7 +10,7 @@ import path from 'node:path';
 import { config } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
 import { fetchAllTracks } from '../plex/tracks.js';
-import { dedupeByTitle, matchesExcludedKeyword } from '../plex/trackFilters.js';
+import { dedupeByTitle, isBannedTrack } from '../plex/trackFilters.js';
 import { recentlyPlayedRatingKeys } from '../producer/history.js';
 import { toLocalPath } from '../plex/musicLibrary.js';
 import { mergeTrackRatingKeys } from '../plex/ratingKeyIndex.js';
@@ -23,17 +23,16 @@ const log = createLogger('station');
 export async function generateFillerPlaylist() {
   const all = await fetchAllTracks();
   const recentlyPlayed = recentlyPlayedRatingKeys();
-  // Which keywords to exclude is a curatorial/personality choice (station.json),
-  // not an operational one -- config.json's filler block keeps poolSize/
-  // intervals/max duration, the mechanical knobs.
-  const excludeKeywords = scheduleUtil.loadStation().filler?.excludeKeywords ?? [];
+  // Station-wide never-play list (keywords + artists) lives on station.json,
+  // not config.json -- config.filler keeps poolSize/intervals/max duration.
+  const neverPlay = scheduleUtil.loadNeverPlay();
   const maxTrackDurationMs = config.filler.maxTrackDurationSeconds
     ? config.filler.maxTrackDurationSeconds * 1000
     : undefined;
   const eligible = dedupeByTitle(all).filter(
     (t) =>
       !recentlyPlayed.has(String(t.ratingKey)) &&
-      !matchesExcludedKeyword(t, excludeKeywords) &&
+      !isBannedTrack(t, neverPlay) &&
       (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs)
   );
 

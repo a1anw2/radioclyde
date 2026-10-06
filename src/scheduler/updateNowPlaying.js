@@ -95,6 +95,42 @@ function currentShowEntry(schedule, state) {
   );
 }
 
+function isDirected(weekday, id, date, timeKey) {
+  const occDir = scheduleUtil.occurrenceDir(weekday, id, date, timeKey);
+  return (
+    fs.existsSync(path.join(occDir, 'playlist.m3u')) && fs.existsSync(path.join(occDir, 'context.json'))
+  );
+}
+
+// Writes now_playing.m3u + now_playing_state.json for a directed occurrence.
+// Returns false if it isn't directed yet (caller decides whether that's a
+// silent no-op or an error). Shared by the scheduler tick and Force Next.
+function loadOccurrence({ show, weekday, date, timeKey }, now) {
+  const occDir = scheduleUtil.occurrenceDir(weekday, show.id, date, timeKey);
+  const playlistPath = path.join(occDir, 'playlist.m3u');
+  const contextPath = path.join(occDir, 'context.json');
+  if (!fs.existsSync(playlistPath) || !fs.existsSync(contextPath)) return false;
+
+  const { durationSeconds } = JSON.parse(fs.readFileSync(contextPath, 'utf8'));
+  // now_playing.m3u carries the occurrence's actual segment list directly
+  // (not a pointer to the other file) -- Liquidsoap's playlist parser treats
+  // every line as a media request, so nesting an m3u reference wouldn't
+  // resolve.
+  fs.writeFileSync(config.paths.nowPlayingPath, fs.readFileSync(playlistPath, 'utf8'));
+  writeState({
+    weekday,
+    id: show.id,
+    date,
+    timeKey,
+    // Provisional -- confirmOccurrenceStart corrects this once the occurrence's
+    // first segment is confirmed actually airing (see its own comment above).
+    estimatedEndAt: now.getTime() + (durationSeconds ?? (show.durationMinutes ?? 60) * 60) * 1000,
+    confirmed: false,
+  });
+  log(`Now playing: "${show.id}" (${weekday} ${timeKey}) -> ${playlistPath}`);
+  return true;
+}
+
 export async function updateNowPlaying() {
   const schedule = scheduleUtil.loadSchedule();
   const now = new Date();
@@ -130,47 +166,47 @@ export async function updateNowPlaying() {
 
   const { show, weekday, date, timeKey } = occurrence;
   if (sameOccurrence(state, weekday, show.id, date, timeKey)) return; // already the one loaded -- nothing to do
-
-  const occDir = scheduleUtil.occurrenceDir(weekday, show.id, date, timeKey);
-  const playlistPath = path.join(occDir, 'playlist.m3u');
-  const contextPath = path.join(occDir, 'context.json');
-  if (!fs.existsSync(playlistPath) || !fs.existsSync(contextPath)) return; // due on, but not directed yet -- leave the current show playing
-
-  const { durationSeconds } = JSON.parse(fs.readFileSync(contextPath, 'utf8'));
-
-  // now_playing.m3u carries the occurrence's actual segment list directly
-  // (not a pointer to the other file) -- Liquidsoap's playlist parser treats
-  // every line as a media request, so nesting an m3u reference wouldn't
-  // resolve.
-  fs.writeFileSync(config.paths.nowPlayingPath, fs.readFileSync(playlistPath, 'utf8'));
-  writeState({
-    weekday,
-    id: show.id,
-    date,
-    timeKey,
-    // Provisional -- confirmOccurrenceStart corrects this once the occurrence's
-    // first segment is confirmed actually airing (see its own comment above).
-    estimatedEndAt: now.getTime() + (durationSeconds ?? (show.durationMinutes ?? 60) * 60) * 1000,
-    confirmed: false,
-  });
-  log(`Now playing: "${show.id}" (${weekday} ${timeKey}) -> ${playlistPath}`);
+  loadOccurrence(occurrence, now); // false: due on, but not directed yet -- leave current show playing
 }
 
-// Studio admin's Force Next Show control. now_playing_state.json still has
-// exactly one writer (this module) -- the process merge (src/server/index.js
-// now also runs startScheduler() in-process) just means the studio route can
-// call straight in here instead of signaling a separate process and waiting
-// for its next tick. Rewrites estimatedEndAt to "now", which is exactly the
-// condition updateNowPlaying() above already checks (line 106) to decide the
-// loaded occurrence has finished, then runs the normal transition logic and
-// returns its real outcome (synchronously, from the caller's point of view).
+// Studio admin's Force Next Show control. Picks the next directed occurrence
+// in the lineup (skipping any that haven't been produced yet), loads it into
+// now_playing.m3u, and returns the new state. Does NOT itself interrupt
+// Liquidsoap -- the studio route has to skip the currently-decoding file
+// after this returns, because a playlist reload only discards the not-yet-
+// started remainder and would otherwise wait out the current track.
 export async function forceNextOccurrence() {
+  const schedule = scheduleUtil.loadSchedule();
+  const now = new Date();
   const state = readNowPlayingState();
-  if (state) {
-    writeState({ ...state, estimatedEndAt: Date.now() });
+  const currentShow = state ? currentShowEntry(schedule, state) : null;
+
+  const candidates = [];
+  if (currentShow) {
+    let cursor = {
+      show: currentShow,
+      weekday: state.weekday,
+      date: state.date,
+      timeKey: state.timeKey,
+    };
+    for (let i = 0; i < 40; i++) {
+      const next = scheduleUtil.nextOccurrence(schedule, cursor);
+      if (!next) break;
+      candidates.push(next);
+      cursor = next;
+    }
+  } else {
+    candidates.push(...scheduleUtil.nextOccurrences(schedule, now, 40));
   }
-  await updateNowPlaying();
-  return readNowPlayingState();
+
+  for (const occ of candidates) {
+    if (state && sameOccurrence(state, occ.weekday, occ.show.id, occ.date, occ.timeKey)) continue;
+    if (!isDirected(occ.weekday, occ.show.id, occ.date, occ.timeKey)) continue;
+    if (loadOccurrence(occ, now)) return readNowPlayingState();
+  }
+  throw new Error(
+    'No directed show is ready to switch to — the next scheduled shows have not been produced yet.'
+  );
 }
 
 async function main() {

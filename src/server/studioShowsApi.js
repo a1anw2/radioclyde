@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import { config } from '../config/index.js';
 import { loadSchedule } from '../scheduler/scheduleUtil.js';
+import { checkScheduleChanged } from '../scheduler/scheduleWatch.js';
 import { parseShowBrief } from '../producer/showBrief.js';
 import {
   readShowBriefForEditing,
@@ -73,11 +74,18 @@ export function registerStudioShowsApi(fastify) {
     }
   });
 
-  fastify.delete('/api/shows/:id', (request, reply) => {
+  fastify.delete('/api/shows/:id', async (request, reply) => {
     try {
-      return deleteShowBrief(request.params.id);
+      const result = await deleteShowBrief(request.params.id);
+      try {
+        checkScheduleChanged();
+      } catch {
+        // next scheduled tick will pick it up
+      }
+      return result;
     } catch (err) {
-      return reply.code(409).send({ error: err.message, references: err.references });
+      const code = err.message.startsWith('No show') ? 404 : 400;
+      return reply.code(code).send({ error: err.message });
     }
   });
 }

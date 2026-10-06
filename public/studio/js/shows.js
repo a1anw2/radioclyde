@@ -134,7 +134,7 @@ formEl.addEventListener('submit', async (event) => {
 
 deleteButton.addEventListener('click', async () => {
   if (!editingId) return;
-  if (!confirm(`Delete show "${editingId}"? This cannot be undone.`)) return;
+  if (!confirm(`Delete show "${editingId}"? It will also be removed from the schedule. This cannot be undone.`)) return;
   try {
     await api(`/api/shows/${encodeURIComponent(editingId)}`, { method: 'DELETE' });
     showList();

@@ -54,6 +54,19 @@ export function matchesExcludedKeyword(track, excludeKeywords) {
   return excludeKeywords.some((kw) => haystack.includes(kw.toLowerCase()));
 }
 
+// Exact artist-name match (case-insensitive, trimmed). Substring matching
+// would ban "Queen" from a track titled "Dancing Queen"; the keyword list
+// already covers folder/title/album hits like "_HeavyRock".
+export function matchesNeverPlayArtist(track, artists) {
+  if (!artists?.length || !track.artist) return false;
+  const name = track.artist.toLowerCase().trim();
+  return artists.some((artist) => artist.toLowerCase().trim() === name);
+}
+
+export function isBannedTrack(track, { keywords = [], artists = [] } = {}) {
+  return matchesExcludedKeyword(track, keywords) || matchesNeverPlayArtist(track, artists);
+}
+
 // Plex's music metadata agent attaches a global popularity figure as
 // ratingCount (confirmed live: a few hundred for deep cuts vs 800k+ for
 // "Hound Dog"). Log-scaling keeps a handful of blockbuster hits from

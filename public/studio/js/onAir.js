@@ -120,10 +120,10 @@ skipButton.addEventListener('click', async () => {
   try {
     await api('/api/on-air/skip', { method: 'POST' });
     setActionMessage('Skipped.');
-    fetchOnAir();
   } catch (err) {
     setActionMessage(err.message, true);
   }
+  await fetchOnAir();
 });
 
 forceNextButton.addEventListener('click', async () => {

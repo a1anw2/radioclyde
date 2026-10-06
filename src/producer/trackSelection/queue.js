@@ -9,9 +9,18 @@
 import { config } from '../../config/index.js';
 import { fetchCandidateTracks } from '../../plex/tracks.js';
 import { fetchCandidateAlbums, fetchAlbumTracks, fetchAlbumsByFolder } from '../../plex/albums.js';
-import { dedupeByTitle, matchesExcludedKeyword, popularityWeight, weightedShuffle } from '../../plex/trackFilters.js';
+import { dedupeByTitle, isBannedTrack, matchesExcludedKeyword, popularityWeight, weightedShuffle } from '../../plex/trackFilters.js';
 import { recentlyPlayedRatingKeys, recentlyPlayedAlbumKeys, recentlyPlayedAlbumTitles, albumKey } from '../history.js';
 import { shuffle } from '../../lib/format.js';
+import { loadNeverPlay } from '../../scheduler/scheduleUtil.js';
+
+function neverPlayBans(excludeKeywords) {
+  const station = loadNeverPlay();
+  return {
+    keywords: [...new Set([...station.keywords, ...excludeKeywords])],
+    artists: station.artists,
+  };
+}
 
 // Heavier per-track commentary (intro + teaser + trivia, roughly two DJ
 // segments) costs more airtime than the old single-line-per-track pipeline
@@ -56,9 +65,12 @@ const DEFAULT_COMPILATION_ALBUM_KEYWORDS = [
 // the full list rather than failing the show outright.
 async function pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre, excludeKeywords, excludeAlbumKeys = new Set() }) {
   const albums = await fetchCandidateAlbums({ artist, genre, decade, albumKeyword, albumGenre });
-  const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...excludeKeywords];
+  const bans = neverPlayBans(excludeKeywords);
+  const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...bans.keywords];
   const nonCompilation = albums.filter(
-    (a) => !matchesExcludedKeyword({ title: a.title, album: a.title, artist: a.artist, genre: a.genre }, compilationKeywords)
+    (a) =>
+      !matchesExcludedKeyword({ title: a.title, album: a.title, artist: a.artist, genre: a.genre, plexPath: a.plexPath }, compilationKeywords) &&
+      !isBannedTrack({ artist: a.artist, plexPath: a.plexPath }, { artists: bans.artists, keywords: [] })
   );
   if (nonCompilation.length === 0) {
     throw new Error(
@@ -76,9 +88,12 @@ async function pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre
 // recentlyPlayedAlbumTitles rather than albumKey's artist+title composite.
 async function pickRandomAlbumFromFolder({ folder, excludeKeywords, excludeAlbumTitles = new Set() }) {
   const albums = await fetchAlbumsByFolder(folder);
-  const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...excludeKeywords];
+  const bans = neverPlayBans(excludeKeywords);
+  const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...bans.keywords];
   const nonCompilation = albums.filter(
-    (a) => !matchesExcludedKeyword({ title: a.title, album: a.title, artist: a.artist, genre: a.genre }, compilationKeywords)
+    (a) =>
+      !matchesExcludedKeyword({ title: a.title, album: a.title, artist: a.artist, genre: a.genre, plexPath: a.plexPath }, compilationKeywords) &&
+      !isBannedTrack({ artist: a.artist, plexPath: a.plexPath }, { artists: bans.artists, keywords: [] })
   );
   if (nonCompilation.length === 0) {
     throw new Error(
@@ -157,9 +172,10 @@ export async function buildSingleAlbumTrackQueue({
     // Folder pseudo-albums carry their tracks inline (no ratingKey to
     // re-fetch by); everything else still looks them up via Plex.
     const rawTracks = album.tracks ?? (await fetchAlbumTracks(album.ratingKey));
+    const bans = neverPlayBans(excludeKeywords);
     const eligible = dedupeByTitle(rawTracks).filter(
       (t) =>
-        !matchesExcludedKeyword(t, excludeKeywords) &&
+        !isBannedTrack(t, bans) &&
         (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs) &&
         (!minTrackDurationMs || t.durationMs >= minTrackDurationMs)
     );
@@ -262,10 +278,11 @@ export async function buildTrackQueue({
   const minTrackDurationMs = effectiveMinTrackDurationSeconds ? effectiveMinTrackDurationSeconds * 1000 : undefined;
   const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
   const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
+  const bans = neverPlayBans(excludeKeywords);
   const eligible = dedupeByTitle(rawCandidates).filter(
     (t) =>
       !recentlyPlayed.has(String(t.ratingKey)) &&
-      !matchesExcludedKeyword(t, excludeKeywords) &&
+      !isBannedTrack(t, bans) &&
       (!maxTrackDurationMs || t.durationMs <= maxTrackDurationMs) &&
       (!minTrackDurationMs || t.durationMs >= minTrackDurationMs)
   );

@@ -3,7 +3,11 @@
     "name": "Sample Radio Station",
     "jingle": "jingles/on_air.mp3",
     "filler": {
-      "excludeKeywords": ["christmas", "santa", "xmas", "holiday", "soundtrack"]
+      "excludeKeywords": ["christmas", "santa", "xmas", "holiday", "soundtrack", "_HeavyRock"]
+    },
+    "neverPlay": {
+      "keywords": ["christmas", "santa", "xmas", "holiday", "soundtrack", "_HeavyRock"],
+      "artists": []
     }
   },
   "downtime": {

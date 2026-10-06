@@ -34,6 +34,23 @@ export function loadStation() {
   return readStationFile().station ?? {};
 }
 
+// Station-wide bans applied to every show queue AND filler. neverPlay is
+// the source of truth once present; older station.json files only had
+// filler.excludeKeywords, which still apply until neverPlay is saved.
+export function loadNeverPlay() {
+  const station = loadStation();
+  if (station.neverPlay) {
+    return {
+      keywords: [...(station.neverPlay.keywords ?? [])],
+      artists: [...(station.neverPlay.artists ?? [])],
+    };
+  }
+  return {
+    keywords: [...(station.filler?.excludeKeywords ?? [])],
+    artists: [],
+  };
+}
+
 // The station's downtime window: { start: "HH:MM", end: "HH:MM" }, the
 // stretch of each day (e.g. "00:00"-"07:00") where nothing airs and filler
 // plays -- see station.json. Optional: a station with none configured keeps

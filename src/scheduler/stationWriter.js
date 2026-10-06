@@ -212,6 +212,33 @@ export async function removeOccurrence(weekday, timeKey) {
   });
 }
 
+// Drops every occurrence of `id` from every weekday and closes the gaps
+// those slots leave behind. Used by studio show-delete so a deleted brief
+// can't leave orphaned schedule entries. Skips the write entirely when the
+// show isn't on the lineup (no reason to expand shared weekday keys or
+// trip scheduleWatch for a no-op).
+export async function removeShowOccurrences(id) {
+  return withLock(config.paths.stationLockPath, async () => {
+    const data = readStationFile();
+    data.schedule = expandSchedule(data.schedule);
+    const removed = [];
+    for (const [weekday, day] of Object.entries(data.schedule ?? {})) {
+      const kept = day.filter((occ) => {
+        if (occ.id === id) {
+          removed.push({ weekday, startTime: occ.startTime });
+          return false;
+        }
+        return true;
+      });
+      if (kept.length !== day.length) {
+        data.schedule[weekday] = closeGaps(kept);
+      }
+    }
+    if (removed.length > 0) atomicWrite(data);
+    return removed;
+  });
+}
+
 export async function replaceDaySchedule(weekday, occurrences) {
   assertValidWeekday(weekday);
   for (const occurrence of occurrences) assertValidOccurrence(occurrence);
@@ -223,10 +250,16 @@ export async function replaceDaySchedule(weekday, occurrences) {
   });
 }
 
-// patch may include name/downtime/filler.excludeKeywords under "station".
+// patch may include name/downtime/neverPlay/filler.excludeKeywords under "station".
 export async function updateStationMeta(patch) {
   return withStation((data) => {
     data.station = { ...data.station, ...patch.station };
+    if (patch.station?.neverPlay) {
+      const keywords = [...(patch.station.neverPlay.keywords ?? [])];
+      const artists = [...(patch.station.neverPlay.artists ?? [])];
+      data.station.neverPlay = { keywords, artists };
+      data.station.filler = { ...(data.station.filler ?? {}), excludeKeywords: keywords };
+    }
     if (patch.downtime !== undefined) data.downtime = patch.downtime;
     return { station: data.station, downtime: data.downtime };
   });
