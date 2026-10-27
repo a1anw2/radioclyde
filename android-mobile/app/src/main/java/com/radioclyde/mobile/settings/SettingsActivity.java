@@ -36,6 +36,8 @@ public class SettingsActivity extends AppCompatActivity implements ActiveProfile
     private TextInputEditText externalUsername;
     private TextInputEditText externalPassword;
     private MaterialSwitch httpsSwitch;
+    private TextInputEditText studioUsername;
+    private TextInputEditText studioPassword;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,6 +57,8 @@ public class SettingsActivity extends AppCompatActivity implements ActiveProfile
         externalUsername = findViewById(R.id.external_username);
         externalPassword = findViewById(R.id.external_password);
         httpsSwitch = findViewById(R.id.https_switch);
+        studioUsername = findViewById(R.id.studio_username);
+        studioPassword = findViewById(R.id.studio_password);
         MaterialButton saveButton = findViewById(R.id.save_button);
 
         ServerProfile internal = profileRepository.getInternal();
@@ -66,6 +70,9 @@ public class SettingsActivity extends AppCompatActivity implements ActiveProfile
         externalUsername.setText(external.username);
         externalPassword.setText(external.password);
         httpsSwitch.setChecked(!"http".equals(external.scheme));
+
+        studioUsername.setText(profileRepository.getStudioUsername());
+        studioPassword.setText(profileRepository.getStudioPassword());
 
         saveButton.setOnClickListener(v -> onSave());
 
@@ -100,6 +107,7 @@ public class SettingsActivity extends AppCompatActivity implements ActiveProfile
                 httpsSwitch.isChecked() ? "https" : "http",
                 eHost,
                 textOf(externalUsername), textOf(externalPassword));
+        profileRepository.saveStudio(textOf(studioUsername), textOf(studioPassword));
 
         resolver.requestProbe(true);
         Toast.makeText(this, R.string.toast_settings_saved, Toast.LENGTH_SHORT).show();

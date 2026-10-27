@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "mode": "coding",
+  "maxTurns": 20,
+  "autoApprove": false,
+  "ignore": [
+    "node_modules",
+    ".git",
+    "dist"
+  ],
+  "rag": {
+    "enabled": true,
+    "topK": 8
+  },
+  "memory": {
+    "enabled": true,
+    "topK": 5,
+    "minScore": 0.5,
+    "extract": true
+  },
+  "defaultModel": "gemma-4-26b-a4b-it",
+  "models": [
+    "gemma-4-26b-a4b-it",
+    "dolphin-mistral-24b-venice-edition",
+    "qwen3.8-27b",
+    "deepseek-v4-flash",
+    "Nano Banana 2",
+    "Nano Banana 2 Lite",
+    "Muse Image"
+  ],
+  "channels": {
+    "whatsapp": {
+      "enabled": false
+    },
+    "email": {
+      "enabled": false
+    },
+    "cron": {
+      "enabled": false
+    }
+  },
+  "tools": {
+    "version": 2,
+    "optional": [
+      "grep",
+      "web_fetch"
+    ],
+    "defaultEnabled": [
+      "grep",
+      "web_fetch"
+    ]
+  },
+  "mcp": {
+    "servers": [],
+    "local": {}
+  },
+  "crons": [],
+  "watches": []
+}

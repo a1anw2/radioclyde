@@ -1,0 +1,5 @@
+sessions/
+file-history/
+.subagent/**/tasks/
+crons/**/runs/
+whatsapp/auth/

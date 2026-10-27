@@ -101,7 +101,7 @@ function queryTool() {
   };
 }
 
-export async function produceTrackQuery({ trackSelectionText, targetDurationMinutes, repeatWindowDays, maxAttempts = 4 }) {
+export async function produceTrackQuery({ trackSelectionText, targetDurationMinutes, repeatWindowDays, allowKeywords = [], maxAttempts = 4 }) {
   const [genreTags, albumGenreTags] = await Promise.all([listGenreTags(), listAlbumGenreTags()]);
   const systemPrompt = [
     'You translate a human-authored "Track Selection" brief for a radio show into a concrete Plex music query',
@@ -143,7 +143,7 @@ export async function produceTrackQuery({ trackSelectionText, targetDurationMinu
 
     log(`track query attempt ${attempt}: ${JSON.stringify(args)}`);
     try {
-      const result = await buildTrackQueue({ ...args, targetDurationMinutes, repeatWindowDays });
+      const result = await buildTrackQueue({ ...args, targetDurationMinutes, repeatWindowDays, allowKeywords });
       return { query: args, result };
     } catch (err) {
       log(`track query attempt ${attempt} rejected: ${err.message}`);

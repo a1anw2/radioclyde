@@ -34,6 +34,14 @@ export function parseShowBrief(descriptionText, { defaultRepeatWindowDays } = {}
   const repeatMatch = /\*\*Repeat window:\*\*\s*(\d+)\s*days?/i.exec(descriptionText);
   const repeatWindowDays = repeatMatch ? parseInt(repeatMatch[1], 10) : defaultRepeatWindowDays;
 
+  // Station-wide neverPlay keywords (christmas, santa, …) apply to every
+  // queue, which would empty a show whose whole point is those tracks.
+  // This header is the explicit per-show exemption; filler does not read it.
+  const allowMatch = /\*\*Allow keywords:\*\*\s*(.+)/i.exec(descriptionText);
+  const allowKeywords = allowMatch
+    ? allowMatch[1].split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
   return {
     text: descriptionText,
     title,
@@ -43,6 +51,7 @@ export function parseShowBrief(descriptionText, { defaultRepeatWindowDays } = {}
     hasWeather: segments.has('weather'),
     hasNews: segments.has('news'), // not implemented yet -- see script-format.md's `live` section
     repeatWindowDays,
+    allowKeywords,
     trackSelectionText: extractSection(descriptionText, 'Track Selection'),
     description: extractSection(descriptionText, 'Description'),
   };

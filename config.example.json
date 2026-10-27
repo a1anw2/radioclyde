@@ -76,6 +76,7 @@
     "nowPlayingCheckIntervalMinutes": 0.1,
     "scheduleWatchIntervalMinutes": 1,
     "maxCatchUpMinutes": 10,
+    "maxSlotOverrunMinutes": 8,
     "minLeadTimeMinutes": 30
   },
   "filler": {

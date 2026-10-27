@@ -146,6 +146,18 @@ function absoluteStart(date, startTime) {
   return d.getTime();
 }
 
+// Nominal wall-clock start for a concrete occurrence -- used when comparing
+// whether two slots are earlier/later in the weekly lineup (e.g. stale-state
+// resync in updateNowPlaying.js must not jump backward to an earlier slot).
+export function occurrenceNominalStartMs({ date, show }) {
+  return absoluteStart(date, show.startTime);
+}
+
+/** Nominal end of the paper schedule slot (start + durationMinutes), not directed runtime. */
+export function occurrenceNominalEndMs({ date, show }) {
+  return occurrenceNominalStartMs({ date, show }) + (show.durationMinutes ?? 30) * 60 * 1000;
+}
+
 // True once a show/date's dj-audio has been fully synthesized by the
 // downtime prewarm pass (schedulePrewarmAudio.js writes this marker only
 // after every cached segment succeeds) -- confirmed live 2026-08-07: a show

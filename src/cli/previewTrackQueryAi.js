@@ -36,6 +36,7 @@ async function main() {
   let trackSelectionText = args.text;
   let targetDurationMinutes = args.duration ? parseInt(args.duration, 10) : undefined;
   let repeatWindowDays = args.repeatWindow ? parseInt(args.repeatWindow, 10) : undefined;
+  let allowKeywords = [];
 
   const descriptionRef = args.file ?? (args.text ? undefined : positional);
   if (descriptionRef) {
@@ -44,6 +45,7 @@ async function main() {
     const brief = parseShowBrief(descriptionText, { defaultRepeatWindowDays: config.scripts.defaultRepeatWindowDays ?? 7 });
     trackSelectionText = trackSelectionText ?? brief.trackSelectionText;
     repeatWindowDays = repeatWindowDays ?? brief.repeatWindowDays;
+    allowKeywords = brief.allowKeywords ?? [];
     if (!targetDurationMinutes) {
       const match = descriptionText.match(/\*\*Duration:\*\*\s*(\d+)\s*min/i);
       targetDurationMinutes = match ? parseInt(match[1], 10) : undefined;
@@ -57,7 +59,7 @@ async function main() {
     );
   }
 
-  const { query, result } = await produceTrackQuery({ trackSelectionText, targetDurationMinutes, repeatWindowDays });
+  const { query, result } = await produceTrackQuery({ trackSelectionText, targetDurationMinutes, repeatWindowDays, allowKeywords });
 
   console.log('AI-produced query:', JSON.stringify(query, null, 2));
   console.log('');

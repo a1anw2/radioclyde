@@ -43,7 +43,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         HistoryEntry entry = entries.get(position);
-        holder.text.setText(holder.text.getContext().getString(R.string.history_entry_format, entry.artist, entry.title));
+        String artist = entry.artist != null ? entry.artist : "";
+        String title = entry.title != null ? entry.title : "";
+        holder.text.setText(holder.text.getContext().getString(R.string.history_entry_format, artist, title));
 
         ServerProfile profile = resolver.getActiveProfile();
         if (entry.artUrl != null && profile != null) {

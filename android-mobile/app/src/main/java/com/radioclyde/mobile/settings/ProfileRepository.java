@@ -22,6 +22,9 @@ public class ProfileRepository {
     private static final String KEY_EXTERNAL_USERNAME = "external_username";
     private static final String KEY_EXTERNAL_PASSWORD = "external_password";
 
+    private static final String KEY_STUDIO_USERNAME = "studio_username";
+    private static final String KEY_STUDIO_PASSWORD = "studio_password";
+
     public static final String DEFAULT_PORT_HINT = "8000";
 
     private final SharedPreferences prefs;
@@ -69,5 +72,26 @@ public class ProfileRepository {
 
     public boolean hasAnyUsableProfile() {
         return getInternal().isUsable() || getExternal().isUsable();
+    }
+
+    /** Studio Basic Auth for /studio/* operator controls (skip song/show). */
+    public String getStudioUsername() {
+        return prefs.getString(KEY_STUDIO_USERNAME, "");
+    }
+
+    public String getStudioPassword() {
+        return prefs.getString(KEY_STUDIO_PASSWORD, "");
+    }
+
+    public boolean hasStudioCredentials() {
+        String username = getStudioUsername();
+        return username != null && !username.trim().isEmpty();
+    }
+
+    public void saveStudio(String username, String password) {
+        prefs.edit()
+                .putString(KEY_STUDIO_USERNAME, username)
+                .putString(KEY_STUDIO_PASSWORD, password)
+                .apply();
     }
 }

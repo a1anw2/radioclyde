@@ -55,6 +55,7 @@ export function readShowBriefForEditing(id) {
     personas,
     segments: [parsed.hasQuiz && 'quiz', parsed.hasWeather && 'weather', parsed.hasNews && 'news'].filter(Boolean),
     repeatWindowDays: parsed.repeatWindowDays,
+    allowKeywords: parsed.allowKeywords ?? [],
     description: parsed.description ?? '',
     hosts: extractSection(text, 'Hosts') ?? '',
     trackSelectionText: parsed.trackSelectionText ?? '',
@@ -81,6 +82,7 @@ export function renderShowBrief(fields) {
   lines.push(`**Personas:** ${(fields.personas ?? []).join(', ')}`);
   lines.push(`**Segments:** ${(fields.segments ?? []).join(', ')}`);
   if (fields.repeatWindowDays) lines.push(`**Repeat window:** ${fields.repeatWindowDays} days`);
+  if (fields.allowKeywords?.length) lines.push(`**Allow keywords:** ${fields.allowKeywords.join(', ')}`);
   lines.push('');
   lines.push('---');
   lines.push('');

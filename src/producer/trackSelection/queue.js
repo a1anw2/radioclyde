@@ -14,10 +14,11 @@ import { recentlyPlayedRatingKeys, recentlyPlayedAlbumKeys, recentlyPlayedAlbumT
 import { shuffle } from '../../lib/format.js';
 import { loadNeverPlay } from '../../scheduler/scheduleUtil.js';
 
-function neverPlayBans(excludeKeywords) {
+function neverPlayBans(excludeKeywords, allowKeywords = []) {
   const station = loadNeverPlay();
+  const allow = new Set(allowKeywords.map((k) => k.toLowerCase()));
   return {
-    keywords: [...new Set([...station.keywords, ...excludeKeywords])],
+    keywords: [...new Set([...station.keywords, ...excludeKeywords])].filter((k) => !allow.has(k.toLowerCase())),
     artists: station.artists,
   };
 }
@@ -63,9 +64,9 @@ const DEFAULT_COMPILATION_ALBUM_KEYWORDS = [
 // permanent ban: if every non-compilation album is inside the window (an
 // artist-locked show with a small catalog, run often enough), fall back to
 // the full list rather than failing the show outright.
-async function pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre, excludeKeywords, excludeAlbumKeys = new Set() }) {
+async function pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre, excludeKeywords, allowKeywords, excludeAlbumKeys = new Set() }) {
   const albums = await fetchCandidateAlbums({ artist, genre, decade, albumKeyword, albumGenre });
-  const bans = neverPlayBans(excludeKeywords);
+  const bans = neverPlayBans(excludeKeywords, allowKeywords);
   const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...bans.keywords];
   const nonCompilation = albums.filter(
     (a) =>
@@ -86,9 +87,9 @@ async function pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre
 // "artist" isn't a reliable per-album identity (see fetchAlbumsByFolder's
 // comment); dedupe against history by title alone via
 // recentlyPlayedAlbumTitles rather than albumKey's artist+title composite.
-async function pickRandomAlbumFromFolder({ folder, excludeKeywords, excludeAlbumTitles = new Set() }) {
+async function pickRandomAlbumFromFolder({ folder, excludeKeywords, allowKeywords, excludeAlbumTitles = new Set() }) {
   const albums = await fetchAlbumsByFolder(folder);
-  const bans = neverPlayBans(excludeKeywords);
+  const bans = neverPlayBans(excludeKeywords, allowKeywords);
   const compilationKeywords = [...DEFAULT_COMPILATION_ALBUM_KEYWORDS, ...bans.keywords];
   const nonCompilation = albums.filter(
     (a) =>
@@ -133,6 +134,7 @@ export async function buildSingleAlbumTrackQueue({
   folder,
   albumGenre,
   excludeKeywords = [],
+  allowKeywords = [],
   maxTrackDurationSeconds,
   minTrackDurationSeconds,
   targetDurationMinutes,
@@ -161,8 +163,8 @@ export async function buildSingleAlbumTrackQueue({
   let lastError;
   for (let attempt = 1; attempt <= maxAlbumAttempts; attempt++) {
     const album = folder
-      ? await pickRandomAlbumFromFolder({ folder, excludeKeywords, excludeAlbumTitles })
-      : await pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre, excludeKeywords, excludeAlbumKeys });
+      ? await pickRandomAlbumFromFolder({ folder, excludeKeywords, allowKeywords, excludeAlbumTitles })
+      : await pickRandomAlbum({ artist, genre, decade, albumKeyword, albumGenre, excludeKeywords, allowKeywords, excludeAlbumKeys });
     // Folder pseudo-albums have no Plex ratingKey (see fetchAlbumsByFolder) --
     // fall back to title as the "already tried this attempt" identity.
     const albumIdentity = album.ratingKey ?? album.title;
@@ -172,7 +174,7 @@ export async function buildSingleAlbumTrackQueue({
     // Folder pseudo-albums carry their tracks inline (no ratingKey to
     // re-fetch by); everything else still looks them up via Plex.
     const rawTracks = album.tracks ?? (await fetchAlbumTracks(album.ratingKey));
-    const bans = neverPlayBans(excludeKeywords);
+    const bans = neverPlayBans(excludeKeywords, allowKeywords);
     const eligible = dedupeByTitle(rawTracks).filter(
       (t) =>
         !isBannedTrack(t, bans) &&
@@ -226,6 +228,7 @@ export async function buildTrackQueue({
   albumGenre,
   recentlyAdded = false,
   excludeKeywords = [],
+  allowKeywords = [],
   maxTrackDurationSeconds,
   minTrackDurationSeconds,
   repeatArtist = true,
@@ -245,6 +248,7 @@ export async function buildTrackQueue({
       folder,
       albumGenre,
       excludeKeywords,
+      allowKeywords,
       maxTrackDurationSeconds,
       minTrackDurationSeconds,
       targetDurationMinutes,
@@ -278,7 +282,7 @@ export async function buildTrackQueue({
   const minTrackDurationMs = effectiveMinTrackDurationSeconds ? effectiveMinTrackDurationSeconds * 1000 : undefined;
   const rawCandidates = await fetchCandidateTracks({ artist, genre, decade, albumKeyword, folder, artistList, albumGenre, recentlyAdded });
   const recentlyPlayed = recentlyPlayedRatingKeys(repeatWindowDays);
-  const bans = neverPlayBans(excludeKeywords);
+  const bans = neverPlayBans(excludeKeywords, allowKeywords);
   const eligible = dedupeByTitle(rawCandidates).filter(
     (t) =>
       !recentlyPlayed.has(String(t.ratingKey)) &&

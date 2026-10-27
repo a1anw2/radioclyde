@@ -12,6 +12,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -74,6 +75,9 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
     private TextView elapsedView;
     private TextView durationView;
     private MaterialButton playPauseButton;
+    private View skipControlsContainer;
+    private MaterialButton skipSongButton;
+    private MaterialButton skipShowButton;
 
     private ListenableFuture<MediaController> controllerFuture;
     private MediaController controller;
@@ -88,6 +92,7 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
     // launcher label baked in at build time and is used as a fallback here
     // until the first poll lands, not as the source of truth.
     private String stationName;
+    private volatile NowPlaying lastNowPlaying;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Runnable pollRunnable = this::poll;
@@ -131,6 +136,9 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
         elapsedView = findViewById(R.id.track_elapsed);
         durationView = findViewById(R.id.track_duration);
         playPauseButton = findViewById(R.id.play_pause_button);
+        skipControlsContainer = findViewById(R.id.skip_controls_container);
+        skipSongButton = findViewById(R.id.skip_song_button);
+        skipShowButton = findViewById(R.id.skip_show_button);
 
         historyAdapter = new HistoryAdapter(resolver);
         RecyclerView historyList = findViewById(R.id.history_list);
@@ -148,6 +156,9 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
                 controller.play();
             }
         });
+
+        skipSongButton.setOnClickListener(v -> runStudioAction("/api/on-air/skip"));
+        skipShowButton.setOnClickListener(v -> runStudioAction("/api/on-air/force-next"));
     }
 
     @Override
@@ -194,6 +205,7 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
         mainHandler.post(pollRunnable);
         mainHandler.removeCallbacks(tickRunnable);
         mainHandler.post(tickRunnable);
+        updateSkipControlsVisibility();
     }
 
     @Override
@@ -301,10 +313,12 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
                         trackIsPlaying && !entries.isEmpty() ? entries.subList(1, entries.size()) : entries;
                 runOnUiThread(() -> {
                     if (!isFinishing() && !isDestroyed()) {
+                        lastNowPlaying = nowPlaying;
                         historyAdapter.submit(displayEntries);
                         applyStationName(nowPlaying.station);
                         applyStationLogo(nowPlaying.show);
                         applyShowName(nowPlaying.show);
+                        updateSkipButtonState(nowPlaying);
                     }
                 });
             } catch (IOException e) {
@@ -337,5 +351,63 @@ public class PlaybackActivity extends AppCompatActivity implements ActiveProfile
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
         return String.format(Locale.US, "%d:%02d", minutes, seconds);
+    }
+
+    private void updateSkipControlsVisibility() {
+        int visibility = profileRepository.hasStudioCredentials() ? View.VISIBLE : View.GONE;
+        skipControlsContainer.setVisibility(visibility);
+    }
+
+    /** Mirrors the studio On Air dashboard: skip song only when a track (not DJ speech) is airing. */
+    private void updateSkipButtonState(NowPlaying nowPlaying) {
+        if (!profileRepository.hasStudioCredentials()) return;
+        boolean songSkippable = nowPlaying.dj == null && nowPlaying.track != null;
+        skipSongButton.setEnabled(songSkippable);
+        skipShowButton.setEnabled(true);
+    }
+
+    private void runStudioAction(String path) {
+        if (!profileRepository.hasStudioCredentials()) return;
+        skipSongButton.setEnabled(false);
+        skipShowButton.setEnabled(false);
+        String studioUser = profileRepository.getStudioUsername();
+        String studioPass = profileRepository.getStudioPassword();
+        AppExecutors.runOnBackground(() -> {
+            try {
+                apiClient.postStudioCommand(path, studioUser, studioPass);
+                AppExecutors.runOnMain(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    Toast.makeText(getApplicationContext(), R.string.toast_studio_action_ok, Toast.LENGTH_SHORT).show();
+                    mainHandler.removeCallbacks(pollRunnable);
+                    mainHandler.post(pollRunnable);
+                });
+            } catch (Exception e) {
+                AppExecutors.runOnMain(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    showStudioErrorToast(e);
+                    restoreSkipButtonState();
+                });
+            }
+        });
+    }
+
+    private void showStudioErrorToast(Exception e) {
+        String message = e.getMessage();
+        if (message != null && message.contains("401")) {
+            message = getString(R.string.toast_studio_unauthorized);
+        } else if (message == null || message.isEmpty()) {
+            message = getString(R.string.toast_studio_action_failed);
+        }
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    private void restoreSkipButtonState() {
+        NowPlaying snapshot = lastNowPlaying;
+        if (snapshot != null) {
+            updateSkipButtonState(snapshot);
+        } else {
+            skipShowButton.setEnabled(true);
+            skipSongButton.setEnabled(false);
+        }
     }
 }

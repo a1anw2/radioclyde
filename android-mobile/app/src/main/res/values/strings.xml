@@ -28,8 +28,16 @@
 
     <string name="action_play">Play</string>
     <string name="action_pause">Pause</string>
+    <string name="action_skip_song">Skip Song</string>
+    <string name="action_skip_show">Skip Show</string>
+
+    <string name="label_studio_section">Studio Controls</string>
+    <string name="label_studio_description">Studio dashboard login (config.studio.users) — not the listener login above. On home Wi‑Fi, Internal profile is enough for skip; away from home, fill External listener login too.</string>
 
     <string name="action_save">Save</string>
     <string name="toast_invalid_port">Port must be numeric</string>
     <string name="toast_settings_saved">Settings saved</string>
+    <string name="toast_studio_action_ok">Done.</string>
+    <string name="toast_studio_action_failed">Request failed. Try again.</string>
+    <string name="toast_studio_unauthorized">Unauthorized — use studio login here (admin), and listener login in External when away from home.</string>
 </resources>

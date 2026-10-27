@@ -10,8 +10,11 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +53,27 @@ public class ApiClient {
             }
         }
         return result;
+    }
+
+    /** POST to a studio route (path is e.g. {@code /api/on-air/skip}). Requires studio Basic Auth. */
+    public void postStudioCommand(String path, String studioUsername, String studioPassword) throws IOException {
+        ServerProfile profile = resolver.getActiveProfile();
+        if (profile == null) {
+            resolver.reportFailure();
+            throw new IOException("No reachable server profile");
+        }
+
+        HttpURLConnection connection = openPostConnection(
+                profile, "/studio" + path, studioUsername, studioPassword);
+        try {
+            handleResponse(connection, path);
+            resolver.reportSuccess();
+        } catch (IOException e) {
+            resolver.reportFailure();
+            throw e;
+        } finally {
+            connection.disconnect();
+        }
     }
 
     private JSONObject getJsonObject(String path) throws IOException {
@@ -91,5 +115,67 @@ public class ApiClient {
                     AuthHeader.buildBasicAuthValue(profile.username, profile.password));
         }
         return connection;
+    }
+
+    private static HttpURLConnection openPostConnection(
+            ServerProfile profile, String path, String username, String password) throws IOException {
+        URL url = new URL(profile.getBaseUrl() + path);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+        // On the trusted LAN the global auth hook is skipped and studio creds
+        // alone are enough. Everywhere else src/server/auth.js requires listener
+        // credentials on Authorization first -- studio creds go in
+        // X-Studio-Authorization (see studioAuth.js).
+        if (profile.hasCredentials()) {
+            connection.setRequestProperty("Authorization",
+                    AuthHeader.buildBasicAuthValue(profile.username, profile.password));
+            connection.setRequestProperty("X-Studio-Authorization",
+                    AuthHeader.buildBasicAuthValue(username, password));
+        } else {
+            connection.setRequestProperty("Authorization",
+                    AuthHeader.buildBasicAuthValue(username, password));
+        }
+        byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+        connection.setFixedLengthStreamingMode(body.length);
+        try (OutputStream out = connection.getOutputStream()) {
+            out.write(body);
+        }
+        return connection;
+    }
+
+    private static void handleResponse(HttpURLConnection connection, String path) throws IOException {
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300
+                ? connection.getInputStream()
+                : connection.getErrorStream();
+        if (stream != null) {
+            String body = HttpUtil.readBody(stream);
+            if (status < 200 || status >= 300) {
+                String message = parseErrorMessage(body);
+                throw new IOException(message != null ? message : path + " returned HTTP " + status);
+            }
+        } else if (status < 200 || status >= 300) {
+            throw new IOException(path + " returned HTTP " + status);
+        }
+    }
+
+    private static String parseErrorMessage(String body) {
+        if (body == null || body.isEmpty()) return null;
+        try {
+            Object parsed = new JSONTokener(body).nextValue();
+            if (parsed instanceof JSONObject) {
+                JSONObject json = (JSONObject) parsed;
+                if (json.has("error") && !json.isNull("error")) {
+                    return json.optString("error");
+                }
+            }
+        } catch (JSONException ignored) {
+            // not JSON -- fall through
+        }
+        return null;
     }
 }

@@ -71,6 +71,7 @@ async function runProducerPipeline({ id, descriptionText, durationMinutes, date 
     trackSelectionText: brief.trackSelectionText,
     targetDurationMinutes: durationMinutes,
     repeatWindowDays: brief.repeatWindowDays,
+    allowKeywords: brief.allowKeywords,
   });
   debug.trackQuery = query;
   debug.trackQueueResult = {

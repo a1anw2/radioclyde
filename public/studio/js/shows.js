@@ -54,6 +54,7 @@ function fillForm(fields) {
   document.getElementById('field-segment-quiz').checked = (fields.segments ?? []).includes('quiz');
   document.getElementById('field-segment-weather').checked = (fields.segments ?? []).includes('weather');
   formEl.elements['repeatWindowDays'].value = fields.repeatWindowDays ?? '';
+  formEl.elements['allowKeywords'].value = (fields.allowKeywords ?? []).join(', ');
   document.getElementById('field-description').value = fields.description ?? '';
   document.getElementById('field-hosts').value = fields.hosts ?? '';
   document.getElementById('field-trackSelection').value = fields.trackSelectionText ?? '';
@@ -104,6 +105,7 @@ function readForm() {
     repeatWindowDays: formEl.elements['repeatWindowDays'].value
       ? Number(formEl.elements['repeatWindowDays'].value)
       : undefined,
+    allowKeywords: formEl.elements['allowKeywords'].value.split(',').map((s) => s.trim()).filter(Boolean),
     description: document.getElementById('field-description').value,
     hosts: document.getElementById('field-hosts').value,
     trackSelectionText: document.getElementById('field-trackSelection').value,

@@ -24,21 +24,29 @@ function unauthorized(reply) {
   reply.header('WWW-Authenticate', 'Basic realm="radioclyde-studio"').code(401).send('Unauthorized');
 }
 
+function parseBasicAuth(header) {
+  if (!header || !header.startsWith('Basic ')) return null;
+  const decoded = Buffer.from(header.slice('Basic '.length), 'base64').toString('utf8');
+  const sepIndex = decoded.indexOf(':');
+  if (sepIndex === -1) return null;
+  return { username: decoded.slice(0, sepIndex), password: decoded.slice(sepIndex + 1) };
+}
+
+function isStudioUser(username, password) {
+  return (config.studio.users ?? []).some(
+    (u) => u.username === username && u.password === password
+  );
+}
+
 export async function registerStudioRoutes(fastify) {
   fastify.addHook('onRequest', async (request, reply) => {
-    const header = request.headers.authorization;
-    if (!header || !header.startsWith('Basic ')) return unauthorized(reply);
-
-    const decoded = Buffer.from(header.slice('Basic '.length), 'base64').toString('utf8');
-    const sepIndex = decoded.indexOf(':');
-    if (sepIndex === -1) return unauthorized(reply);
-
-    const username = decoded.slice(0, sepIndex);
-    const password = decoded.slice(sepIndex + 1);
-    const authorized = (config.studio.users ?? []).some(
-      (u) => u.username === username && u.password === password
-    );
-    if (!authorized) return unauthorized(reply);
+    // Browser studio UI sends studio creds on Authorization. The mobile app
+    // (and any off-LAN client) must put listener creds on Authorization for
+    // auth.js and studio creds here -- HttpURLConnection only allows one
+    // Authorization value.
+    const studioHeader = request.headers['x-studio-authorization'] ?? request.headers.authorization;
+    const creds = parseBasicAuth(studioHeader);
+    if (!creds || !isStudioUser(creds.username, creds.password)) return unauthorized(reply);
   });
 
   // CSRF mitigation: a browser auto-replays cached Basic Auth credentials on

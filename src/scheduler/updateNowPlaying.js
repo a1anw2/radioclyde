@@ -26,10 +26,18 @@
 // estimatedEndAt is stale by more than maxCatchUpMinutes) -- otherwise a
 // multi-hour scheduler outage would resume by racing sequentially through
 // every show missed instead of picking up wherever real time now is.
+//
+// Directed runtime (estimatedEndAt) can still run past the paper slot end --
+// that's intentional for a show finishing its last track -- but only within
+// maxSlotOverrunMinutes after the slot's nominal end. Past that grace, if
+// wall clock has already started a later slot, we cut over to
+// mostRecentOccurrence instead of holding the old show (and replaying it
+// from the top after a Liquidsoap restart).
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../config/index.js';
 import { createLogger } from '../lib/logger.js';
+import { sendCommand } from '../liquidsoap/telnetClient.js';
 import * as scheduleUtil from './scheduleUtil.js';
 
 const log = createLogger('station');
@@ -102,6 +110,68 @@ function isDirected(weekday, id, date, timeKey) {
   );
 }
 
+// After `current` in station.json's ordered lineup, respecting on-paper gaps.
+function followingOccurrence(schedule, current, now) {
+  const next = scheduleUtil.nextOccurrence(schedule, current);
+  if (!next) return null;
+  if (next.hasGap && now.getTime() < next.nextStart) return null;
+  return next;
+}
+
+// When state is stale, mostRecentOccurrence can point at an *earlier* slot
+// than the occurrence we were actually carrying (filler after a short directed
+// show routinely pushes past estimatedEndAt by >maxCatchUpMinutes while the
+// next slot isn't directed yet). Advance from the last loaded occurrence
+// instead of rewinding the lineup.
+function staleResyncOccurrence(schedule, state, loadedShow, now) {
+  const mro = scheduleUtil.mostRecentOccurrence(schedule, now);
+  if (!mro) return null;
+  const loadedStart = scheduleUtil.occurrenceNominalStartMs({
+    date: state.date,
+    show: loadedShow,
+  });
+  const mroStart = scheduleUtil.occurrenceNominalStartMs({ date: mro.date, show: mro.show });
+  if (mroStart < loadedStart) {
+    return (
+      followingOccurrence(schedule, {
+        show: loadedShow,
+        weekday: state.weekday,
+        date: state.date,
+        timeKey: state.timeKey,
+      }, now) ?? mro
+    );
+  }
+  // Wall clock is already into a later slot -- jump there directly instead of
+  // replaying every skipped occurrence sequentially (Oasis -> Jewel -> Whitney).
+  return mro;
+}
+
+// Paper slot end + grace has passed and a later slot has already started.
+function isBehindWallClockSchedule(schedule, state, loadedShow, now) {
+  if (!state || !loadedShow) return false;
+  const graceMs = (config.schedule.maxSlotOverrunMinutes ?? 8) * 60 * 1000;
+  const nominalEndMs = scheduleUtil.occurrenceNominalEndMs({ date: state.date, show: loadedShow });
+  if (now.getTime() <= nominalEndMs + graceMs) return false;
+  const mro = scheduleUtil.mostRecentOccurrence(schedule, now);
+  if (!mro) return false;
+  const loadedStart = scheduleUtil.occurrenceNominalStartMs({ date: state.date, show: loadedShow });
+  const mroStart = scheduleUtil.occurrenceNominalStartMs({ date: mro.date, show: mro.show });
+  return mroStart > loadedStart;
+}
+
+async function interruptLiquidsoapOutput() {
+  try {
+    await sendCommand('show_source.reload');
+  } catch {
+    // watch mode may still pick up the rewrite; skip below is what actually cuts audio.
+  }
+  try {
+    await sendCommand('/stream.skip');
+  } catch (err) {
+    log(`Liquidsoap skip after now_playing rewrite failed: ${err.message}`);
+  }
+}
+
 // Writes now_playing.m3u + now_playing_state.json for a directed occurrence.
 // Returns false if it isn't directed yet (caller decides whether that's a
 // silent no-op or an error). Shared by the scheduler tick and Force Next.
@@ -134,28 +204,42 @@ function loadOccurrence({ show, weekday, date, timeKey }, now) {
 export async function updateNowPlaying() {
   const schedule = scheduleUtil.loadSchedule();
   const now = new Date();
-  const state = readNowPlayingState();
+  const previousState = readNowPlayingState();
+  const loadedShow = previousState ? currentShowEntry(schedule, previousState) : null;
+  const behindWallClock =
+    loadedShow && isBehindWallClockSchedule(schedule, previousState, loadedShow, now);
 
-  // Currently-loaded occurrence's real (directed) runtime hasn't elapsed yet
-  // -- let it keep playing even if a later occurrence's scheduled startTime
-  // has already arrived.
-  if (state && now.getTime() < state.estimatedEndAt) return;
+  // Directed runtime still has runway -- hold unless we're past the paper slot
+  // (+ grace) and a later show has already started on the schedule grid.
+  if (
+    previousState &&
+    now.getTime() < previousState.estimatedEndAt &&
+    !behindWallClock
+  ) {
+    return;
+  }
 
   const maxCatchUpMs = (config.schedule.maxCatchUpMinutes ?? 10) * 60 * 1000;
-  const staleState = state && now.getTime() - state.estimatedEndAt > maxCatchUpMs;
-  const currentShow = state && !staleState ? currentShowEntry(schedule, state) : null;
+  const staleState =
+    previousState && now.getTime() - previousState.estimatedEndAt > maxCatchUpMs;
+  const currentShow =
+    previousState && !staleState && !behindWallClock ? loadedShow : null;
 
   let occurrence;
   if (currentShow) {
-    const next = scheduleUtil.nextOccurrence(schedule, {
-      show: currentShow,
-      weekday: state.weekday,
-      date: state.date,
-      timeKey: state.timeKey,
-    });
-    if (!next) return; // nothing programmed anywhere in the lineup -- leave whatever's loaded, filler covers it
-    if (next.hasGap && now.getTime() < next.nextStart) return; // a real, on-paper gap -- filler fills it until next's own scheduled start
-    occurrence = next;
+    occurrence = followingOccurrence(
+      schedule,
+      {
+        show: currentShow,
+        weekday: previousState.weekday,
+        date: previousState.date,
+        timeKey: previousState.timeKey,
+      },
+      now
+    );
+    if (!occurrence) return; // nothing programmed / real gap -- filler covers it
+  } else if (loadedShow && (staleState || behindWallClock)) {
+    occurrence = staleResyncOccurrence(schedule, previousState, loadedShow, now);
   } else {
     // First run ever, or the scheduler was down long enough that resuming
     // sequentially from `state` would just race through everything missed --
@@ -164,9 +248,28 @@ export async function updateNowPlaying() {
   }
   if (!occurrence) return; // nothing has started yet today (or yesterday) -- leave now_playing.m3u alone
 
-  const { show, weekday, date, timeKey } = occurrence;
-  if (sameOccurrence(state, weekday, show.id, date, timeKey)) return; // already the one loaded -- nothing to do
-  loadOccurrence(occurrence, now); // false: due on, but not directed yet -- leave current show playing
+  const advanced = await advanceToOccurrence(occurrence, previousState, schedule, now);
+  if (advanced && previousState) {
+    await interruptLiquidsoapOutput();
+  }
+}
+
+async function advanceToOccurrence(firstOccurrence, previousState, schedule, now) {
+  const { show, weekday, date, timeKey } = firstOccurrence;
+  if (sameOccurrence(previousState, weekday, show.id, date, timeKey)) return false;
+  if (loadOccurrence(firstOccurrence, now)) return true;
+
+  // Next slot isn't directed yet -- try later occurrences instead of leaving
+  // state to go stale and resync backward on a later tick.
+  let cursor = { show, weekday, date, timeKey };
+  for (let i = 0; i < 40; i++) {
+    const later = followingOccurrence(schedule, cursor, now);
+    if (!later) break;
+    if (sameOccurrence(previousState, later.weekday, later.show.id, later.date, later.timeKey)) break;
+    if (loadOccurrence(later, now)) return true;
+    cursor = later;
+  }
+  return false;
 }
 
 // Studio admin's Force Next Show control. Picks the next directed occurrence
